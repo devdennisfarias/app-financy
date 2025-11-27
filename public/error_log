@@ -1,0 +1,6 @@
+[03-Jan-2024 14:50:59 America/Sao_Paulo] PHP Deprecated:  Using ${var} in strings is deprecated, use {$var} instead in /home1/nortew88/nexus.norteweb.com.br/vendor/nesbot/carbon/src/Carbon/Traits/Date.php on line 1253
+[03-Jan-2024 14:50:59 America/Sao_Paulo] PHP Deprecated:  Using ${var} in strings is deprecated, use {$var} instead in /home1/nortew88/nexus.norteweb.com.br/vendor/nesbot/carbon/src/Carbon/Traits/Date.php on line 1262
+[03-Jan-2024 14:50:59 America/Sao_Paulo] PHP Deprecated:  Using ${var} in strings is deprecated, use {$var} instead in /home1/nortew88/nexus.norteweb.com.br/vendor/nesbot/carbon/src/Carbon/Traits/Date.php on line 2482
+[03-Jan-2024 14:50:59 America/Sao_Paulo] PHP Deprecated:  Using ${var} in strings is deprecated, use {$var} instead in /home1/nortew88/nexus.norteweb.com.br/vendor/nesbot/carbon/src/Carbon/Traits/Date.php on line 2607
+[03-Jan-2024 14:50:59 America/Sao_Paulo] PHP Deprecated:  Using ${var} in strings is deprecated, use {$var} instead in /home1/nortew88/nexus.norteweb.com.br/vendor/nesbot/carbon/src/Carbon/Traits/Date.php on line 2619
+[03-Jan-2024 14:50:59 America/Sao_Paulo] PHP Deprecated:  Using ${var} in strings is deprecated, use {$var} instead in /home1/nortew88/nexus.norteweb.com.br/vendor/facade/ignition/src/SolutionProviders/MergeConflictSolutionProvider.php on line 52

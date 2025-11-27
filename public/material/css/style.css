@@ -1,0 +1,14 @@
+/* ===========================================
+   SUBMENU – Cinza escuro com hover claro
+   =========================================== */
+
+/* Fundo do submenu */
+.sidebar .nav .collapse .nav {
+    background-color: #EEEEEE !important; /* cinza escuro */
+}
+
+/* Hover (um pouco mais claro) */
+.sidebar .nav .collapse .nav li > a:hover {
+    background-color: #e1dede !important;  /* cinza mais claro que o fundo */
+}
+
