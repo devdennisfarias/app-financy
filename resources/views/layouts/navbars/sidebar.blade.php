@@ -36,6 +36,7 @@
 					'propostas',
 					'propostas-usuario',
 					'esteira',
+					'acessos-externos',
 				]);
 
 				$producaoOpen = in_array($activePage ?? '', [
@@ -46,7 +47,6 @@
 				$adminOpen = in_array($activePage ?? '', [
 					'roles',
 					'status',
-					'acessos-externos',
 				]);
 			@endphp
 
@@ -144,7 +144,7 @@
 						@can('bancos.index')
 							<li class="nav-item{{ ($activePage ?? '') == 'bancos' ? ' active' : '' }}">
 								<a class="nav-link" href="{{ route('bancos.index') }}">
-									<i class="material-icons">account_balance</i>
+									<i class="material-icons">account_balance_wallet</i>
 									<span class="sidebar-normal">{{ __('Bancos') }}</span>
 								</a>
 							</li>
@@ -194,6 +194,15 @@
 								<span class="sidebar-normal">{{ __('Esteira') }}</span>
 							</a>
 						</li>
+
+						@can('acessos-externos.index')
+							<li class="nav-item{{ ($activePage ?? '') == 'acessos-externos' ? ' active' : '' }}">
+								<a class="nav-link" href="{{ route('acessos-externos.index') }}">
+									<i class="material-icons">vpn_key</i>
+									<span class="sidebar-normal">Acessos Externos</span>
+								</a>
+							</li>
+						@endcan
 					</ul>
 				</div>
 			</li>
@@ -239,7 +248,7 @@
 			@endcan
 
 			{{-- ===============================ADMINISTRAÇÃO================================= --}}
-			@if(Auth::user() && (Auth::user()->can('roles.index') || Auth::user()->can('status.index') || Auth::user()->can('acessos-externos.index')))
+			@if(Auth::user() && (Auth::user()->can('roles.index') || Auth::user()->can('status.index')))
 				<li class="nav-item">
 					<a class="nav-link" data-toggle="collapse" href="#administracao"
 						aria-expanded="{{ $adminOpen ? 'true' : 'false' }}">
@@ -265,15 +274,6 @@
 									<a class="nav-link" href="{{ route('status.index') }}">
 										<i class="material-icons">rule</i>
 										<span class="sidebar-normal">{{ __('Status') }}</span>
-									</a>
-								</li>
-							@endcan
-
-							@can('acessos-externos.index')
-								<li class="nav-item{{ ($activePage ?? '') == 'acessos-externos' ? ' active' : '' }}">
-									<a class="nav-link" href="{{ route('acessos-externos.index') }}">
-										<i class="material-icons">vpn_key</i>
-										<span class="sidebar-normal">Acessos Externos</span>
 									</a>
 								</li>
 							@endcan

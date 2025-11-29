@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Fornecedor;
-use app\Models\Cliente;
+use App\Models\Cliente;              // <-- AJUSTE AQUI
 use App\Models\LancamentoFinanceiro;
 use App\Models\ContaBancaria;
 use Illuminate\Http\Request;

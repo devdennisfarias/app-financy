@@ -36,11 +36,12 @@
                 <form method="GET" action="{{ route('acessos-externos.index') }}">
                     <div class="card">
                         <div class="card-body">
-                            <div class="form-row align-items-end">
-                                {{-- Banco / Sistema --}}
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="banco">Banco / Sistema</label>
+                            <div class="row align-items-end">
+
+                                {{-- Banco / Sistema (SELECT COM NOVO LAYOUT) --}}
+                                <div class="col-md-4">
+                                    <div class="input-group input-group-static mb-3">
+                                        <label for="banco" class="ms-0">Banco / Sistema</label>
                                         <select name="banco" id="banco" class="form-control">
                                             <option value="">Todos</option>
                                             @foreach($bancos as $nomeBanco => $nomeBancoExibicao)
@@ -53,26 +54,26 @@
                                     </div>
                                 </div>
 
-                                {{-- Busca texto --}}
+                                {{-- Busca texto (INPUT COM NOVO LAYOUT) --}}
                                 <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="q">Buscar</label>
+                                    <div class="input-group input-group-outline my-3 w-100">
+                                        <label for="q" class="form-label">Buscar (nome, link ou usuário)</label>
                                         <input type="text"
                                                name="q"
                                                id="q"
                                                class="form-control"
-                                               placeholder="Nome, link ou usuário..."
                                                value="{{ $filtros['q'] ?? '' }}">
                                     </div>
                                 </div>
 
                                 {{-- Botão filtrar --}}
                                 <div class="col-md-2">
-                                    <button type="submit" class="btn btn-primary btn-block">
+                                    <button type="submit" class="btn btn-primary btn-block mt-3">
                                         <i class="material-icons">search</i>
                                         Filtrar
                                     </button>
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -106,35 +107,49 @@
                                             <th class="text-right">Ações</th>
                                         </tr>
                                     </thead>
-																		<tbody>
-																		@foreach($acessos as $acesso)
+                                    <tbody>
+                                        @foreach($acessos as $acesso)
+                                            <tr>
+                                                <td>{{ $acesso->nome }}</td>
 
-																		<tr>
-																				<td>{{ $acesso->nome }}</td>
+                                                <td>
+                                                    @if($acesso->link)
+                                                        <a href="{{ $acesso->link }}" target="_blank">
+                                                            {{ \Illuminate\Support\Str::limit($acesso->link, 30) }}
+                                                        </a>
+                                                    @endif
+                                                </td>
 
-																				<td>
-																						@if($acesso->link)
-																								<a href="{{ $acesso->link }}" target="_blank">
-																										{{ \Illuminate\Support\Str::limit($acesso->link, 30) }}
-																								</a>
-																						@endif
-																				</td>
+                                                <td>{{ \Illuminate\Support\Str::limit($acesso->usuario, 25) }}</td>
 
-																				<td>{{ \Illuminate\Support\Str::limit($acesso->usuario, 25) }}</td>
+                                                <td>{{ $acesso->senha }}</td>
 
-																				<td>{{ $acesso->senha }}</td>
+                                                <td>{{ \Illuminate\Support\Str::limit($acesso->observacao, 35) }}</td>
 
-																				<td>{{ \Illuminate\Support\Str::limit($acesso->observacao, 35) }}</td>
+                                                <td>{{ $acesso->updated_at->format('d/m/Y H:i') }}</td>
 
-																				<td>{{ $acesso->updated_at->format('d/m/Y H:i') }}</td>
+                                                <td class="td-actions text-right">
+                                                    {{-- Editar --}}
+                                                    <a href="{{ route('acessos-externos.edit', $acesso->id) }}"
+                                                       class="btn btn-info btn-sm" title="Editar">
+                                                        <i class="material-icons">edit</i>
+                                                    </a>
 
-																				<td class="text-right">
-																						<a href="{{ route('acessos-externos.edit', $acesso->id) }}" class="btn btn-sm btn-primary">Editar</a>
-																				</td>
-																		</tr>
-
-																		@endforeach
-																		</tbody>
+                                                    {{-- Apagar --}}
+                                                    <form action="{{ route('acessos-externos.destroy', $acesso->id) }}"
+                                                          method="POST"
+                                                          style="display:inline-block"
+                                                          onsubmit="return confirm('Tem certeza que deseja excluir este acesso?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-danger btn-sm" title="Excluir">
+                                                            <i class="material-icons">delete</i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
 
                                 </table>
                             </div>

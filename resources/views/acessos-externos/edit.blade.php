@@ -21,11 +21,11 @@
 
                         <div class="card-body">
 
-                            {{-- Banco / Sistema (select) --}}
+                            {{-- Banco / Sistema (SELECT COM NOVO LAYOUT) --}}
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="form-group bmd-form-group">
-                                        <label for="nome" class="bmd-label-floating">Banco / Sistema *</label>
+                                    <div class="input-group input-group-static mb-4">
+                                        <label for="nome" class="ms-0">Banco / Sistema *</label>
                                         <select name="nome" id="nome" class="form-control" required>
                                             <option value="">Selecione...</option>
                                             @foreach($bancos as $nomeBanco => $nomeBancoExibicao)
@@ -43,8 +43,8 @@
 
                                 {{-- Link --}}
                                 <div class="col-md-6">
-                                    <div class="form-group bmd-form-group">
-                                        <label for="link" class="bmd-label-floating">Link de acesso (URL)</label>
+                                    <div class="input-group input-group-outline my-3 w-100">
+                                        <label for="link" class="form-label">Link de acesso (URL)</label>
                                         <input type="text"
                                                name="link"
                                                id="link"
@@ -60,8 +60,8 @@
                             {{-- Usuário e Senha --}}
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="form-group bmd-form-group">
-                                        <label for="usuario" class="bmd-label-floating">Usuário / Login</label>
+                                    <div class="input-group input-group-outline my-3 w-100">
+                                        <label for="usuario" class="form-label">Usuário / Login</label>
                                         <input type="text"
                                                name="usuario"
                                                id="usuario"
@@ -74,8 +74,8 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <div class="form-group bmd-form-group">
-                                        <label for="senha" class="bmd-label-floating">Senha</label>
+                                    <div class="input-group input-group-outline my-3 w-100">
+                                        <label for="senha" class="form-label">Senha</label>
                                         <input type="text"
                                                name="senha"
                                                id="senha"
@@ -91,14 +91,14 @@
                             {{-- Observação --}}
                             <div class="row">
                                 <div class="col-md-12">
-                                    <div class="form-group bmd-form-group">
-                                        <label for="observacao" class="bmd-label-floating">Observação</label>
+                                    <div class="input-group input-group-dynamic">
                                         <textarea name="observacao"
                                                   id="observacao"
                                                   class="form-control"
-                                                  rows="3">{{ old('observacao', $acesso->observacao) }}</textarea>
+                                                  rows="3"
+                                                  placeholder="Observações sobre esse acesso...">{{ old('observacao', $acesso->observacao) }}</textarea>
                                         @error('observacao')
-                                            <span class="text-danger">{{ $message }}</span>
+                                            <span class="text-danger d-block mt-1">{{ $message }}</span>
                                         @enderror
                                     </div>
                                 </div>

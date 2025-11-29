@@ -124,5 +124,53 @@ class Proposta extends Model
 			->sum('valor_liquido_liberado');
 	}
 
+	// use App\Models\StatusTipo;  <-- garante que tenha esse use no topo
+
+	public function statusTipoAtual()
+	{
+		return $this->belongsTo(StatusTipo::class, 'status_tipo_atual_id');
+	}
+
+	/**
+	 * Texto amigável do status (vem de status_tipos)
+	 */
+	public function getStatusTipoDescricaoAttribute()
+	{
+		// ajuste o campo conforme sua migration/status_tipos (descricao, nome, titulo, etc)
+		return optional($this->statusTipoAtual)->descricao ?? 'Não informado';
+	}
+
+	/**
+	 * Classe CSS do badge, baseado no tipo/status_tipos.
+	 * Se você tiver um campo 'slug' ou 'codigo' em status_tipos, melhor usar ele.
+	 */
+	public function getStatusTipoBadgeClassAttribute()
+	{
+		// se tiver 'slug' em status_tipos, use:
+		$slug = optional($this->statusTipoAtual)->slug;
+
+		return match ($slug) {
+			'cadastrada' => 'badge-secondary',
+			'andamento' => 'badge-info',
+			'pendente' => 'badge-warning',
+			'concluida' => 'badge-success',
+			'cancelada' => 'badge-danger',
+			default => 'badge-default',
+		};
+
+		// Se ainda não tiver slug e quiser manter por ID:
+		/*
+		return match ($this->status_tipo_atual_id) {
+				1 => 'badge-secondary',
+				2 => 'badge-info',
+				3 => 'badge-warning',
+				4 => 'badge-success',
+				5 => 'badge-danger',
+				default => 'badge-default',
+		};
+		*/
+	}
+
+
 
 }

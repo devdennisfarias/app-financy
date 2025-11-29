@@ -161,7 +161,8 @@ Route::group(['middleware' => 'auth'], function () {
 	Route::get('financeiro/movimentacao-bancaria', [LancamentoFinanceiroController::class, 'movimentacao'])->name('financeiro.movimentacao')->middleware('can:lancamentos.index');
 
 	// ACESSOS EXTERNOS
-	Route::resource('acessos-externos', AcessoExternoController::class)->names('acessos-externos');
+	Route::resource('acessos-externos', AcessoExternoController::class)->except(['show']);
+
 
 });
 

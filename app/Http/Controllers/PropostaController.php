@@ -27,48 +27,14 @@ class PropostaController extends Controller
 
 	public function index(Request $request)
 	{
-		$query = Proposta::query();
+		// A listagem de "Todas as Propostas" será controlada pelo componente Livewire
+		// @livewire('propostas-index'), então aqui só retornamos a view.
 
-		// filtros opcionais
-		if ($request->filled('data_inicio')) {
-			$query->whereDate('created_at', '>=', $request->data_inicio);
-		}
-
-		if ($request->filled('data_fim')) {
-			$query->whereDate('created_at', '<=', $request->data_fim);
-		}
-
-		if ($request->filled('user_id')) {
-			$query->where('user_id', $request->user_id);
-		}
-
-		$propostas = $query
-			->with(['cliente', 'produto', 'user'])
-			->latest()
-			->paginate(20);
-
-		$usuarios = User::orderBy('name')->get();
-
-		// --- KPIs ---
-		$baseQuery = clone $query;
-
-		$resumo = [
-			'total' => (clone $baseQuery)->count(),
-			// ajuste os IDs de status conforme sua tabela de status_atual_id
-			'aprovadas' => (clone $baseQuery)->where('status_atual_id', 3)->count(),
-			'pendentes' => (clone $baseQuery)->whereIn('status_atual_id', [1, 2])->count(),
-			'valor_total' => (clone $baseQuery)->sum('valor_liquido_liberado'),
-		];
-
-		return view('producao.index', [
-			'propostas' => $propostas,
-			'usuarios' => $usuarios,
-			'filtros' => $request->only(['data_inicio', 'data_fim', 'user_id']),
-			'resumo' => $resumo,
+		return view('propostas.index', [
+			'activePage' => 'propostas',
+			'titlePage' => 'Lista de propostas',
 		]);
 	}
-
-
 
 	public function create()
 	{

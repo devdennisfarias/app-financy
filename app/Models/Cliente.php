@@ -14,18 +14,10 @@ class Cliente extends Model
     protected $table = 'clientes';
 
     public function vendedor(){   
-            // BELONGSTO
-        //@ 1 Modelo com qual me relaciono
-        //@ 2 FK nesta tabela
-        //@ 3 Referencia que a FK faz
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
     public function propostas(){
-            //HASMANY
-        //@ 1 Modelo com qual me relaciono
-        //@ 2 FK na tabela com que me relaciono
-        //@ 3 FK que esta tabela envia
         return $this->hasMany(Proposta::class, 'cliente_id', 'id');
     }
 

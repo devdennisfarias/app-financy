@@ -36,7 +36,7 @@
                                         <div class="row">
                                             <div class="col-md-4">
                                                 <div class="form-group">
-                                                    <label class="bmd-label-floating">Número Nexus</label>
+                                                    <label class="bmd-label-floating">Número FinancyCred</label>
                                                     <input readonly="readonly" type="text" class="form-control" name="numero_nexus"
                                                            value="{{ $proposta->id }}">
                                                 </div>

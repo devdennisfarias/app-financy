@@ -5,7 +5,7 @@
         &copy;
         <script>
             document.write(new Date().getFullYear())
-        </script>, Nexus by
+        </script>, FinancyCred by
         <a href="#" >Dennis Farias</a> - <a href="https://www.grupolhasa.com.br" target="_blank">Grupo Lhasa</a>
         </div>
     </div>

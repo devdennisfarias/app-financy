@@ -46,7 +46,7 @@
                                 <table class="table">
                                     <thead>
                                         <tr>
-                                            <th>Nº Nexus</th>
+                                            <th>Nº FinancyCred</th>
                                             <th>% Comissão</th>
                                             <th>Banco</th>
                                             <th>Orgão</th>
@@ -92,7 +92,7 @@
                                                             <div class="modal-content">
                                                                 <div class="modal-header">
                                                                     <h5 class="modal-title" id="exampleModalLabel">
-                                                                        Numero Nexus: <strong>{{ $proposta->id }}</strong>
+                                                                        Numero FinancyCred: <strong>{{ $proposta->id }}</strong>
                                                                     </h5>
                                                                     <button type="button" class="close"
                                                                             data-dismiss="modal" aria-label="Close">
