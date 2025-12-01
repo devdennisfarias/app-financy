@@ -191,7 +191,7 @@
 						<li class="nav-item{{ ($activePage ?? '') == 'esteira' ? ' active' : '' }}">
 							<a class="nav-link" href="{{ route('esteira.index') }}">
 								<i class="material-icons">format_indent_increase</i>
-								<span class="sidebar-normal">{{ __('Esteira') }}</span>
+								<span class="sidebar-normal">{{ __('Esteira de Propostas')  }}</span>
 							</a>
 						</li>
 

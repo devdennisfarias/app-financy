@@ -22,7 +22,7 @@ class StatusTiposTableSeeder extends Seeder
 		];
 
 		foreach ($tipos as $id => $tipo) {
-			\App\Models\StatusTipo::updateOrCreate(
+			StatusTipo::updateOrCreate(
 				['id' => $id], // garante o ID estável
 				[
 					'tipo_status' => $tipo,

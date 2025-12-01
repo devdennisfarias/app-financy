@@ -77,7 +77,20 @@ class UsersTableSeeder extends Seeder
 				'updated_at' => now(),
 			]
 		);
-		$marketing->assignRole('Marketing');
+		$marketing->assignRole('Atendimento');
+
+		//Atendimento
+		$atendimento = User::updateOrCreate(
+			['email' => 'atendimento@financycred.com.br'],
+			[
+				'name' => 'Atendimento',
+				'email_verified_at' => now(),
+				'password' => Hash::make('Senha@2025@$'),
+				'created_at' => now(),
+				'updated_at' => now(),
+			]
+		);
+		$atendimento->assignRole('Atendimento');
 
 		// Suporte
 		$suporte = User::updateOrCreate(

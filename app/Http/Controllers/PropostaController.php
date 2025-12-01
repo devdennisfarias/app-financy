@@ -7,9 +7,10 @@ use App\Models\Proposta;
 use App\Models\Cliente;
 use App\Models\Documento;
 use App\Models\Produto;
-use App\Models\RegraProduto;
 use App\Models\Tabela;
 use App\Models\User;
+use App\Models\Comissao;
+use App\Models\Promotora;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -57,16 +58,10 @@ class PropostaController extends Controller
 		$dados = $request->all();
 		$user = User::find($loggedId);
 
-		if ($user->regra_id == null) {
-			return redirect()
-				->route('propostas.create')
-				->with('danger', 'Você não tem regra de comissão cadastrada, por isso não pode enviar essa proposta!')
-				->withInput();
-		}
-
-
 		$validator = Validator::make($dados, [
 			'produto' => ['required'],
+			// se quiser, pode já validar aqui:
+			// 'porcentagem_comissao_vendedor' => ['nullable', 'numeric'],
 		]);
 
 		if ($validator->fails()) {
@@ -79,38 +74,52 @@ class PropostaController extends Controller
 
 		if (!empty($verificaCpf)) {
 
-
-
 			$proposta->cliente_id = $verificaCpf['id'];
 
 			$proposta->orgao = $dados['orgao'];
 			$proposta->tabela_digitada = $dados['tabela_digitada'];
 			$proposta->vigencia_tabela = $dados['vigencia_tabela'];
-			$proposta->banco = $dados['banco'];
+			$proposta->banco = $dados['banco']; // texto/legado
 
-			$dados['valor_bruto'] = str_replace(".", "", $dados['valor_bruto']); // Tira a ponto
-			$dados['valor_bruto'] = str_replace(",", ".", $dados['valor_bruto']); // Tira a vírgula
+			// PRODUTO
+			$proposta->produto_id = $dados['produto'];
+
+			$produto = Produto::with('banco')->find($proposta->produto_id);
+
+			// BANCO_ID (se existir a coluna na tabela propostas)
+			if ($produto && isset($proposta->banco_id)) {
+				$proposta->banco_id = $produto->banco_id;
+			}
+
+			// PROMOTORA (opcional)
+			if (!empty($dados['promotora_id'] ?? null)) {
+				$proposta->promotora_id = $dados['promotora_id'];
+			}
+
+			// TRATAMENTO DOS VALORES
+			$dados['valor_bruto'] = str_replace(".", "", $dados['valor_bruto']);
+			$dados['valor_bruto'] = str_replace(",", ".", $dados['valor_bruto']);
 			if ($dados['valor_bruto'] == "") {
 				$dados['valor_bruto'] = null;
 			}
 			$proposta->valor_bruto = $dados['valor_bruto'];
 
-			$dados['valor_liquido_liberado'] = str_replace(".", "", $dados['valor_liquido_liberado']); // Tira a ponto
-			$dados['valor_liquido_liberado'] = str_replace(",", ".", $dados['valor_liquido_liberado']); // Tira a vírgula
+			$dados['valor_liquido_liberado'] = str_replace(".", "", $dados['valor_liquido_liberado']);
+			$dados['valor_liquido_liberado'] = str_replace(",", ".", $dados['valor_liquido_liberado']);
 			if ($dados['valor_liquido_liberado'] == "") {
 				$dados['valor_liquido_liberado'] = null;
 			}
 			$proposta->valor_liquido_liberado = $dados['valor_liquido_liberado'];
 
-			$dados['tx_juros'] = str_replace("%", "", $dados['tx_juros']); // Tira o %
-			$dados['tx_juros'] = str_replace(",", ".", $dados['tx_juros']); // Tira a vírgula
+			$dados['tx_juros'] = str_replace("%", "", $dados['tx_juros']);
+			$dados['tx_juros'] = str_replace(",", ".", $dados['tx_juros']);
 			if ($dados['tx_juros'] == "") {
 				$dados['tx_juros'] = null;
 			}
 			$proposta->tx_juros = $dados['tx_juros'];
 
-			$dados['valor_parcela'] = str_replace(".", "", $dados['valor_parcela']); // Tira a ponto
-			$dados['valor_parcela'] = str_replace(",", ".", $dados['valor_parcela']); // Tira a vírgula
+			$dados['valor_parcela'] = str_replace(".", "", $dados['valor_parcela']);
+			$dados['valor_parcela'] = str_replace(",", ".", $dados['valor_parcela']);
 			if ($dados['valor_parcela'] == "") {
 				$dados['valor_parcela'] = null;
 			}
@@ -122,13 +131,23 @@ class PropostaController extends Controller
 			$proposta->status_atual_id = 1;
 			$proposta->status_tipo_atual_id = 1;
 
-			// SETANDO PRODUTO E VALOR DA COMISSÃO DO VENDEDOR NA HORA DO CADASTRO DA PROPOSTA
-			$proposta->produto_id = $dados['produto'];
-			$user = User::find($loggedId);
-			$regra_produto = RegraProduto::where('produto_id', '=', $proposta->produto_id)->where('regra_id', '=', $user->regra_id)->first();
-			$proposta->porcentagem_comissao_vendedor = $regra_produto->comissao;
+			// ===============================
+			// COMISSÃO DO VENDEDOR
+			// ===============================
 
-			$proposta->tabela_digitada = $dados['tabela_digitada'];
+			// 1) Tenta pegar do formulário (manual)
+			$percentManual = $dados['porcentagem_comissao_vendedor'] ?? null;
+
+			if ($percentManual !== null && $percentManual !== '') {
+				// normalizar vírgula/ponto
+				$percentManual = str_replace('%', '', $percentManual);
+				$percentManual = str_replace(',', '.', $percentManual);
+				$proposta->porcentagem_comissao_vendedor = $percentManual;
+			} else {
+				// 2) Se não veio manual, tenta resolver automático
+				$percentAuto = $this->resolveComissaoVendedor($produto, $proposta->promotora_id ?? null);
+				$proposta->porcentagem_comissao_vendedor = $percentAuto; // pode ser null, e tudo bem
+			}
 
 			$proposta->save();
 
@@ -163,7 +182,6 @@ class PropostaController extends Controller
 			->route('propostas.create')
 			->withDanger('Cliente não cadastrado')
 			->withInput();
-
 	}
 
 
@@ -351,5 +369,56 @@ class PropostaController extends Controller
 		]);
 	}
 
+	protected function resolveComissaoVendedor(?Produto $produto, ?int $promotoraId): ?float
+	{
+		if (!$produto) {
+			return null;
+		}
+
+		$hoje = now()->toDateString();
+
+		// 1) Tentar comissão específica da promotora + produto
+		if ($promotoraId) {
+			$comissaoPromo = Comissao::where('produto_id', $produto->id)
+				->where('promotora_id', $promotoraId)
+				->where('tipo_comissao', 'vendedor')
+				->where('ativo', true)
+				->where(function ($q) use ($hoje) {
+					$q->whereNull('vigencia_inicio')->orWhere('vigencia_inicio', '<=', $hoje);
+				})
+				->where(function ($q) use ($hoje) {
+					$q->whereNull('vigencia_fim')->orWhere('vigencia_fim', '>=', $hoje);
+				})
+				->orderByDesc('id')
+				->first();
+
+			if ($comissaoPromo && $comissaoPromo->percentual !== null) {
+				return (float) $comissaoPromo->percentual;
+			}
+		}
+
+		// 2) Tentar comissão por banco + produto
+		if ($produto->banco_id) {
+			$comissaoBanco = Comissao::where('produto_id', $produto->id)
+				->where('banco_id', $produto->banco_id)
+				->where('tipo_comissao', 'vendedor')
+				->where('ativo', true)
+				->where(function ($q) use ($hoje) {
+					$q->whereNull('vigencia_inicio')->orWhere('vigencia_inicio', '<=', $hoje);
+				})
+				->where(function ($q) use ($hoje) {
+					$q->whereNull('vigencia_fim')->orWhere('vigencia_fim', '>=', $hoje);
+				})
+				->orderByDesc('id')
+				->first();
+
+			if ($comissaoBanco && $comissaoBanco->percentual !== null) {
+				return (float) $comissaoBanco->percentual;
+			}
+		}
+
+		// 3) Não encontrou configuração -> retorna null
+		return null;
+	}
 
 }
