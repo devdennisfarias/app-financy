@@ -63,7 +63,7 @@
 
                                 {{-- Linha 1: Nome + Código --}}
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-8">
                                         <div class="form-group bmd-form-group">
                                             <label class="bmd-label-floating" for="nome">
                                                 Nome da Instituição
@@ -77,7 +77,7 @@
                                         </div>
                                     </div>
 
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <div class="form-group bmd-form-group">
                                             <label class="bmd-label-floating" for="codigo">
                                                 Código (opc.)
@@ -91,30 +91,11 @@
                                         </div>
                                     </div>
 
-                                    {{-- Tipo da instituição --}}
-                                    <div class="col-md-3">
-                                        <div class="form-group bmd-form-group">
-                                            <label class="bmd-label-floating" for="tipo">
-                                                Tipo da Instituição
-                                            </label>
-                                            <select name="tipo" id="tipo" class="form-control">
-                                                @foreach ($tiposInstituicao as $valor => $label)
-                                                    <option value="{{ $valor }}"
-                                                        {{ old('tipo', $editMode ? $banco->tipo ?? 'banco' : 'banco') == $valor ? 'selected' : '' }}>
-                                                        {{ $label }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            @error('tipo')
-                                                <span class="text-danger d-block">{{ $message }}</span>
-                                            @enderror
-                                        </div>
-                                    </div>
                                 </div>
 
                                 {{-- Linha 2: Estados de atuação (multiselect) --}}
                                 <div class="row">
-                                    <div class="col-md-12">
+                                    <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="ufs">
                                                 Estados de atuação
@@ -137,6 +118,26 @@
                                                 Segure <strong>CTRL (Windows)</strong> ou <strong>Command (Mac)</strong>
                                                 para selecionar vários estados.
                                             </small>
+                                        </div>
+                                    </div>
+
+                                    {{-- Tipo da instituição --}}
+                                    <div class="col-md-6">
+                                        <div class="input-group input-group-dynamic">
+                                            <label for="tipo" class="form-label">
+                                                Tipo da Instituição
+                                            </label>
+                                            <select name="tipo" id="tipo" class="form-control">
+                                                @foreach ($tiposInstituicao as $valor => $label)
+                                                    <option value="{{ $valor }}"
+                                                        {{ old('tipo', $editMode ? $banco->tipo ?? 'banco' : 'banco') == $valor ? 'selected' : '' }}>
+                                                        {{ $label }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @error('tipo')
+                                                <span class="text-danger d-block">{{ $message }}</span>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>

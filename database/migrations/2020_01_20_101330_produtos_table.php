@@ -15,13 +15,17 @@ class ProdutosTable extends Migration
 	{
 		Schema::create('produtos', function (Blueprint $table) {
 			$table->id();
-			$table->string('produto')->nullable();
+			$table->string('produto');
 			$table->string('descricao')->nullable();
-			$table->foreignId('banco_id')->nullable()->constrained('bancos');
+			// outros campos que você já tem...
 
+			// EM VEZ DE:
+			// $table->foreignId('banco_id')->nullable()->constrained('bancos');
+
+			// USE APENAS:
+			$table->unsignedBigInteger('banco_id')->nullable();
 
 			$table->timestamps();
-			$table->softDeletes();
 		});
 	}
 

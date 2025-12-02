@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Atendimento;
+use App\Models\Banco;
 use App\Models\Proposta;
 use App\Models\Cliente;
 use App\Models\Documento;
 use App\Models\Produto;
-use App\Models\Tabela;
 use App\Models\User;
 use App\Models\Comissao;
 use App\Models\Promotora;
@@ -39,150 +39,48 @@ class PropostaController extends Controller
 
 	public function create()
 	{
-		$loggedId = Auth::id();
-		$user = User::find($loggedId);
-		$produtos = Produto::all();
-		$tabelas = Tabela::all();
-		return view('propostas.create', [
-			'user' => $user,
-			'produtos' => $produtos,
-			'tabelas' => $tabelas
-		]);
+		$produtos = Produto::with('instituicao')
+			->orderBy('produto')
+			->get();
+
+		$instituicoes = Banco::orderBy('nome')->get();
+
+		// ... se você já manda outras coisas (clientes, users, etc.), mantém
+
+		return view('propostas.create', compact(
+			'produtos',
+			'instituicoes',
+			// ... outros dados
+		));
 	}
 
 
 	public function store(Request $request)
 	{
-		$loggedId = Auth::id();
-		$proposta = new Proposta;
-		$dados = $request->all();
-		$user = User::find($loggedId);
-
-		$validator = Validator::make($dados, [
-			'produto' => ['required'],
-			// se quiser, pode já validar aqui:
-			// 'porcentagem_comissao_vendedor' => ['nullable', 'numeric'],
+		$dados = $request->validate([
+			'produto_id' => 'required|exists:produtos,id',
+			'banco_id' => 'nullable|exists:bancos,id',
+			// ... resto dos campos da proposta (cliente, valor, etc.)
 		]);
 
-		if ($validator->fails()) {
-			return redirect()->route('propostas.create')
-				->withErrors($validator)
-				->withInput();
+		// Se banco/instituição não vier do form, tenta usar a do produto
+		if (empty($dados['banco_id']) && !empty($dados['produto_id'])) {
+			$produto = Produto::with('instituicao')->find($dados['produto_id']);
+
+			if ($produto && $produto->instituicao) {
+				$dados['banco_id'] = $produto->instituicao->id;
+			}
 		}
 
-		$verificaCpf = Cliente::where("cpf", "=", $request->cpf)->first();
+		$proposta = Proposta::create($dados);
 
-		if (!empty($verificaCpf)) {
-
-			$proposta->cliente_id = $verificaCpf['id'];
-
-			$proposta->orgao = $dados['orgao'];
-			$proposta->tabela_digitada = $dados['tabela_digitada'];
-			$proposta->vigencia_tabela = $dados['vigencia_tabela'];
-			$proposta->banco = $dados['banco']; // texto/legado
-
-			// PRODUTO
-			$proposta->produto_id = $dados['produto'];
-
-			$produto = Produto::with('banco')->find($proposta->produto_id);
-
-			// BANCO_ID (se existir a coluna na tabela propostas)
-			if ($produto && isset($proposta->banco_id)) {
-				$proposta->banco_id = $produto->banco_id;
-			}
-
-			// PROMOTORA (opcional)
-			if (!empty($dados['promotora_id'] ?? null)) {
-				$proposta->promotora_id = $dados['promotora_id'];
-			}
-
-			// TRATAMENTO DOS VALORES
-			$dados['valor_bruto'] = str_replace(".", "", $dados['valor_bruto']);
-			$dados['valor_bruto'] = str_replace(",", ".", $dados['valor_bruto']);
-			if ($dados['valor_bruto'] == "") {
-				$dados['valor_bruto'] = null;
-			}
-			$proposta->valor_bruto = $dados['valor_bruto'];
-
-			$dados['valor_liquido_liberado'] = str_replace(".", "", $dados['valor_liquido_liberado']);
-			$dados['valor_liquido_liberado'] = str_replace(",", ".", $dados['valor_liquido_liberado']);
-			if ($dados['valor_liquido_liberado'] == "") {
-				$dados['valor_liquido_liberado'] = null;
-			}
-			$proposta->valor_liquido_liberado = $dados['valor_liquido_liberado'];
-
-			$dados['tx_juros'] = str_replace("%", "", $dados['tx_juros']);
-			$dados['tx_juros'] = str_replace(",", ".", $dados['tx_juros']);
-			if ($dados['tx_juros'] == "") {
-				$dados['tx_juros'] = null;
-			}
-			$proposta->tx_juros = $dados['tx_juros'];
-
-			$dados['valor_parcela'] = str_replace(".", "", $dados['valor_parcela']);
-			$dados['valor_parcela'] = str_replace(",", ".", $dados['valor_parcela']);
-			if ($dados['valor_parcela'] == "") {
-				$dados['valor_parcela'] = null;
-			}
-			$proposta->valor_parcela = $dados['valor_parcela'];
-
-			$proposta->qtd_parcelas = $dados['qtd_parcelas'];
-			$proposta->user_id = $loggedId;
-
-			$proposta->status_atual_id = 1;
-			$proposta->status_tipo_atual_id = 1;
-
-			// ===============================
-			// COMISSÃO DO VENDEDOR
-			// ===============================
-
-			// 1) Tenta pegar do formulário (manual)
-			$percentManual = $dados['porcentagem_comissao_vendedor'] ?? null;
-
-			if ($percentManual !== null && $percentManual !== '') {
-				// normalizar vírgula/ponto
-				$percentManual = str_replace('%', '', $percentManual);
-				$percentManual = str_replace(',', '.', $percentManual);
-				$proposta->porcentagem_comissao_vendedor = $percentManual;
-			} else {
-				// 2) Se não veio manual, tenta resolver automático
-				$percentAuto = $this->resolveComissaoVendedor($produto, $proposta->promotora_id ?? null);
-				$proposta->porcentagem_comissao_vendedor = $percentAuto; // pode ser null, e tudo bem
-			}
-
-			$proposta->save();
-
-			// MUDA CLIENTE DE CARTEIRA CASO FOR VENDEDOR DIFERENTE
-			if ($verificaCpf->vendedor->id !== $loggedId) {
-				$verificaCpf->user_id = $loggedId;
-				$verificaCpf->save();
-			}
-
-			//// TRATAMENTO DOS DOCUMENTOS ENVIADOS
-			if ($request['documentos']) {
-				for ($i = 0; $i < count($request->allFiles()['documentos']); $i++) {
-
-					$file = $request->allFiles()['documentos'][$i];
-
-					$documento = new Documento();
-					$documento->proposta_id = $proposta->id;
-					$documento->path = $file->store('propostas/' . $proposta->id);
-					$documento->extencao = $file->extension();
-					$documento->save();
-					unset($documento);
-				}
-			}
-
-			return redirect()
-				->route('propostas.edit', compact('proposta'))
-				->withSuccess('Proposta cadastrada.');
-
-		}
+		// ... qualquer lógica adicional que você já tenha
 
 		return redirect()
-			->route('propostas.create')
-			->withDanger('Cliente não cadastrado')
-			->withInput();
+			->route('propostas.edit', $proposta->id)
+			->with('success', 'Proposta criada com sucesso.');
 	}
+
 
 
 	public function show(Proposta $proposta)
@@ -193,109 +91,50 @@ class PropostaController extends Controller
 
 	public function edit($id)
 	{
-		$proposta = Proposta::find($id);
-		$cliente = $proposta->cliente->find($proposta->cliente_id);
-		//dd($cliente);
-		$atendimentos = Atendimento::all();
+		$proposta = Proposta::with(['produto.instituicao', 'instituicao'])
+			->findOrFail($id);
 
-		if ($proposta) {
-			return view('propostas.edit', [
-				'cliente' => $cliente,
-				'proposta' => $proposta,
-				'atendimentos' => $atendimentos
-			]);
-		}
+		$produtos = Produto::with('instituicao')
+			->orderBy('produto')
+			->get();
 
-		return redirect()->route('propostas.index');
+		$instituicoes = Banco::orderBy('nome')->get();
+
+		return view('propostas.edit', compact(
+			'proposta',
+			'produtos',
+			'instituicoes',
+			// ... outros dados
+		));
 	}
+
 
 
 	public function update(Request $request, $id)
 	{
+		$proposta = Proposta::findOrFail($id);
 
-		$proposta = Proposta::find($id);
-		$dados = $request->all();
+		$dados = $request->validate([
+			'produto_id' => 'required|exists:produtos,id',
+			'banco_id' => 'nullable|exists:bancos,id',
+			// ... demais campos
+		]);
 
-		/*$validator = Validator::make($dados,[
+		if (empty($dados['banco_id']) && !empty($dados['produto_id'])) {
+			$produto = Produto::with('instituicao')->find($dados['produto_id']);
 
-		]); */
-
-		$verificaCpf = Cliente::where("cpf", "=", $request->cpf)->first();
-		//dd($verificaCpf->id);
-
-		if (!empty($verificaCpf)) {
-
-			$proposta->cliente_id = $verificaCpf->id;
-
-
-			$proposta->orgao = $dados['orgao'];
-			$proposta->tabela_digitada = $dados['tabela_digitada'];
-			$proposta->vigencia_tabela = $dados['vigencia_tabela'];
-			$proposta->banco = $dados['banco'];
-
-			$dados['valor_bruto'] = str_replace(".", "", $dados['valor_bruto']); // Tira a ponto
-			$dados['valor_bruto'] = str_replace(",", ".", $dados['valor_bruto']); // Tira a vírgula
-			if ($dados['valor_bruto'] == "") {
-				$dados['valor_bruto'] = null;
+			if ($produto && $produto->instituicao) {
+				$dados['banco_id'] = $produto->instituicao->id;
 			}
-			$proposta->valor_bruto = $dados['valor_bruto'];
-
-			$dados['valor_liquido_liberado'] = str_replace(".", "", $dados['valor_liquido_liberado']); // Tira a ponto
-			$dados['valor_liquido_liberado'] = str_replace(",", ".", $dados['valor_liquido_liberado']); // Tira a vírgula
-			if ($dados['valor_liquido_liberado'] == "") {
-				$dados['valor_liquido_liberado'] = null;
-			}
-			$proposta->valor_liquido_liberado = $dados['valor_liquido_liberado'];
-
-			$dados['tx_juros'] = str_replace("%", "", $dados['tx_juros']); // Tira o %
-			$dados['tx_juros'] = str_replace(",", ".", $dados['tx_juros']); // Tira a vírgula
-			if ($dados['tx_juros'] == "") {
-				$dados['tx_juros'] = null;
-			}
-			$proposta->tx_juros = $dados['tx_juros'];
-
-			$dados['valor_parcela'] = str_replace(".", "", $dados['valor_parcela']); // Tira a ponto
-			$dados['valor_parcela'] = str_replace(",", ".", $dados['valor_parcela']); // Tira a vírgula
-			if ($dados['valor_parcela'] == "") {
-				$dados['valor_parcela'] = null;
-			}
-			$proposta->valor_parcela = $dados['valor_parcela'];
-
-			$proposta->qtd_parcelas = $dados['qtd_parcelas'];
-
-			$proposta->save();
-
-			//// TRATAMENTO DOS DOCUMENTOS ENVIADOS
-			if ($request->documentos) {
-				for ($i = 0; $i < count($request->allFiles()['documentos']); $i++) {
-
-					$file = $request->allFiles()['documentos'][$i];
-
-					$documento = new Documento();
-					$documento->proposta_id = $proposta->id;
-					$documento->path = $file->store('propostas/' . $proposta->id);
-					$documento->extencao = $file->extension();
-					//dd($documento->extencao);
-					$documento->save();
-					unset($documento);
-				}
-			}
-
-
-			return redirect()
-				->route('propostas.edit', compact('proposta'))
-				->withSuccess('Proposta atualizada.');
-
-		} else {
-			return redirect()
-				->back()
-				->withDanger('Cliente não cadastrado')
-				->withInput();
 		}
 
-		return redirect()->back()->withDanger();
+		$proposta->update($dados);
 
+		return redirect()
+			->route('propostas.edit', $proposta->id)
+			->with('success', 'Proposta atualizada com sucesso.');
 	}
+
 
 
 

@@ -71,15 +71,15 @@ class RolesTableSeeder extends Seeder
 		$financeiroRole = Role::firstOrCreate(['name' => 'Financeiro', 'guard_name' => 'web']);
 		$financeiroRole->syncPermissions($financeiroPermissions);
 
-		// ===== Marketing =====
-		$marketingPermissions = $getPerms([
+		// ===== Atendimento =====
+		$atendimentoPermissions = $getPerms([
 			'dashboard.view',
 			'clientes.index',
 			'propostas.index',
 			'minhas-propostas.index',
 		]);
-		$marketingRole = Role::firstOrCreate(['name' => 'Marketing', 'guard_name' => 'web']);
-		$marketingRole->syncPermissions($marketingPermissions);
+		$atendimentoRole = Role::firstOrCreate(['name' => 'Atendimento', 'guard_name' => 'web']);
+		$atendimentoRole->syncPermissions($atendimentoPermissions);
 
 		// ===== Suporte =====
 		$suportePermissions = $getPerms([

@@ -1,52 +1,103 @@
-@extends('layouts.app', ['activePage' => 'produtos', 'titlePage' => __('Editar Produto')])
-
+@extends('layouts.app', [
+    'activePage' => 'produtos',
+    'titlePage'  => __('Editar Produto')
+])
 
 @section('content')
+<div class="content">
+    <div class="container-fluid">
 
-    <div class="content">
+        {{-- CABEÇALHO --}}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title">Editar Produto</h4>
+                        <p class="card-category">Atualize as informações deste produto</p>
+                    </div>
 
-        @if (session('info'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <strong>{{ session('info') }}</strong>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
+                    <div class="card-body">
 
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-12 text-right">
-                    <a href="{{ route('produtos.index') }}" class="btn btn-sm btn"><i class="material-icons">reply</i></a>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="card">
-                        <div class="card-header card-header-primary">
-                            <h4 class="card-title ">Editar Produto</h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-12">
+                        {{-- ERROS DE VALIDAÇÃO --}}
+                        @if ($errors->any())
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
 
-                                    {!! Form::model($produto, ['route' => ['produtos.update', $produto], 'method' => 'put']) !!}
-                                    @include('produtos.partials.form')
+                        {{-- FORMULÁRIO --}}
+                        <form method="POST"
+                              action="{{ route('produtos.update', $produto->id) }}">
+                            @csrf
+                            @method('PUT')
 
-                                    {!! Form::submit('Atualizar Produto', ['class' => 'btn btn-success mt-2']) !!}
-                                    {!! Form::close() !!}
+                            {{-- Partial do Formulário --}}
+                            @include('produtos.partials.form')
+
+                            <div class="row mt-4">
+                                <div class="col-md-12 text-right">
+
+                                    <a href="{{ route('produtos.index') }}"
+                                       class="btn btn-default">
+                                        Voltar
+                                    </a>
+
+                                    <button type="submit"
+                                            class="btn btn-primary">
+                                        Salvar Alterações
+                                    </button>
 
                                 </div>
                             </div>
-                            <!--fim card-body-->
-                            <!--<div class="card-footer"></div>-->
-                        </div>
-                    </div>
-                    <!--fim card-->
-                </div>
-            </div>
-        </div>
-        <!--container-fluid-->
-    </div>
+                        </form>
 
+                    </div> {{-- card-body --}}
+                </div> {{-- card --}}
+            </div> {{-- col --}}
+        </div> {{-- row --}}
+
+    </div> {{-- container --}}
+</div> {{-- content --}}
 @endsection
+
+{{-- Scripts adicionais usados no formulário --}}
+@push('js')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var toggle       = document.getElementById('nova_instituicao_toggle');
+    var camposDiv    = document.getElementById('nova_instituicao_campos');
+    var selectInst   = document.getElementById('banco_id');
+
+    if (!toggle || !camposDiv || !selectInst) {
+        return;
+    }
+
+    function atualizarVisibilidadeCampos() {
+        if (toggle.checked) {
+            camposDiv.style.display = 'block';
+            selectInst.value = '';
+            selectInst.disabled = true;
+        } else {
+            camposDiv.style.display = 'none';
+            selectInst.disabled = false;
+
+            document.getElementById('nova_instituicao_nome').value = '';
+            document.getElementById('nova_instituicao_tipo').value = '';
+            document.getElementById('nova_instituicao_codigo').value = '';
+        }
+    }
+
+    toggle.addEventListener('change', atualizarVisibilidadeCampos);
+
+    // Se havia erro e veio preenchido, mantém aberto
+    @if(old('nova_instituicao_nome'))
+        toggle.checked = true;
+        atualizarVisibilidadeCampos();
+    @endif
+});
+</script>
+@endpush

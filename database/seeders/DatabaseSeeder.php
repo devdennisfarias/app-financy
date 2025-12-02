@@ -22,8 +22,9 @@ class DatabaseSeeder extends Seeder
 			StatusTiposTableSeeder::class,
 			StatusTableSeeder::class,
 
-			ProdutoTableSeeder::class,
 			BancosTableSeeder::class,
+			ProdutoTableSeeder::class,
+			TabelaTableSeeder::class,
 		]);
 	}
 

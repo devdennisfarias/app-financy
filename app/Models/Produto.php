@@ -11,6 +11,16 @@ class Produto extends Model
 	use HasFactory;
 	use SoftDeletes;
 
+	protected $fillable = [
+		'produto',
+		'descricao',
+		'banco_id',
+	];
+
+	public function instituicao()
+	{
+		return $this->belongsTo(Banco::class, 'banco_id');
+	}
 	protected $table = 'produtos';
 
 
@@ -59,11 +69,6 @@ class Produto extends Model
 	public function comissoes()
 	{
 		return $this->hasMany(Comissao::class);
-	}
-
-	public function instituicao()
-	{
-		return $this->belongsTo(Banco::class, 'banco_id');
 	}
 
 }

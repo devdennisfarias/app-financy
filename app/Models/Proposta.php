@@ -32,10 +32,7 @@ class Proposta extends Model
 
 	public function produto()
 	{
-		//@ 1 Modelo com qual me relaciono
-		//@ 2 FK nesta tabela
-		//@ 3 Referencia que a FK faz
-		return $this->belongsTo(Produto::class, 'produto_id', 'id');
+		return $this->belongsTo(\App\Models\Produto::class, 'produto_id');
 	}
 
 	public function documentos()

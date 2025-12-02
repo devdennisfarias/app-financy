@@ -14,8 +14,13 @@ class AddUpdatedByToAcessosExternosTable extends Migration
 	public function up()
 	{
 		Schema::table('acessos_externos', function (Blueprint $table) {
-			$table->unsignedBigInteger('updated_by')->nullable()->after('observacao');
-			$table->unsignedBigInteger('created_by')->nullable()->after('updated_by');
+   if (!Schema::hasColumn('acessos_externos', 'updated_by')) {
+            $table->unsignedBigInteger('updated_by')->nullable()->after('observacao');
+        }
+
+        if (!Schema::hasColumn('acessos_externos', 'created_by')) {
+            $table->unsignedBigInteger('created_by')->nullable()->after('updated_by');
+        }
 		});
 	}
 

@@ -16,7 +16,7 @@ class UsersTableSeeder extends Seeder
 	{
 		// Super Admin
 		$superAdmin = User::updateOrCreate(
-			['email' => 'superadmin@financycred.com.br'],
+			['email' => 'contato@norteweb.com.br'],
 			[
 				'name' => 'Super Admin',
 				'email_verified_at' => now(),

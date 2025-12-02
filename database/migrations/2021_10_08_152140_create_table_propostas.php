@@ -27,13 +27,14 @@ class CreateTablePropostas extends Migration
 			$table->decimal('porcentagem_comissao_vendedor', 5, 2)->nullable()->default(0);
 			$table->timestamps();
 
-			$table->integer('prazo')->nullable()->after('qtd_parcelas'); // ex: 96
-			$table->decimal('valor_contrato', 15, 2)->nullable()->after('valor_bruto');
-			$table->string('banco_promotora')->nullable()->after('banco');
-			$table->date('data_entrada')->nullable()->after('created_at');
-			$table->date('data_final')->nullable()->after('data_entrada');
-			$table->decimal('percentual_comissao', 5, 2)->nullable()->after('porcentagem_comissao_vendedor');
-			$table->decimal('valor_comissao', 15, 2)->nullable()->after('percentual_comissao');
+			$table->integer('prazo')->nullable();
+			$table->decimal('valor_contrato', 15, 2)->nullable();
+			$table->string('banco_promotora')->nullable();
+			$table->date('data_entrada')->nullable();
+			$table->date('data_final')->nullable();
+			$table->decimal('percentual_comissao', 5, 2)->nullable();
+			$table->decimal('valor_comissao', 15, 2)->nullable();
+
 
 			$table->unsignedBigInteger('cliente_id')->nullable();
 			$table->foreign('cliente_id')->references('id')->on('clientes');

@@ -3,12 +3,12 @@
 @section('content')
     <div class="content">
         <div class="container-fluid">
-            
+
             <div class="row">
                 <div class="col-12 text-left">
                     @can('produtos.create')
                         <a href="{{ route('produtos.create') }}" class="btn btn-sm btn btn-success"><i
-                               class="material-icons">add</i> Adicionar</a>
+                                class="material-icons">add</i> Adicionar</a>
                     @endcan
                 </div>
             </div>
@@ -21,65 +21,137 @@
                         </div>
                         <div class="card-body">
 
+                            {{-- Filtros --}}
+                            <form method="GET" action="{{ route('produtos.index') }}" class="mb-3">
+                                <div class="row">
+
+                                    {{-- Filtro por instituição --}}
+                                    <div class="col-md-5">
+                                        <div class="form-group bmd-form-group">
+                                            <label for="instituicao_id">Instituição</label>
+                                            <select name="instituicao_id" id="instituicao_id" class="form-control">
+                                                <option value="">Todas</option>
+                                                <option value="gen"
+                                                    {{ ($instituicaoFiltro ?? '') === 'gen' ? 'selected' : '' }}>
+                                                    Somente genéricos (sem instituição)
+                                                </option>
+                                                @foreach ($instituicoes as $inst)
+                                                    <option value="{{ $inst->id }}"
+                                                        {{ (string) ($instituicaoFiltro ?? '') === (string) $inst->id ? 'selected' : '' }}>
+                                                        {{ $inst->nome }}
+                                                        @if ($inst->tipo)
+                                                            ({{ $inst->tipo }})
+                                                        @endif
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {{-- Filtro por tipo de instituição --}}
+                                    <div class="col-md-5">
+                                        <div class="form-group bmd-form-group">
+                                            <label for="tipo_instituicao">Tipo da
+                                                Instituição</label>
+                                            <select name="tipo_instituicao" id="tipo_instituicao" class="form-control">
+                                                <option value="">Todos</option>
+                                                @foreach ($tiposInstituicao as $valor => $label)
+                                                    <option value="{{ $valor }}"
+                                                        {{ ($tipoFiltro ?? '') === $valor ? 'selected' : '' }}>
+                                                        {{ $label }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {{-- Botões --}}
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button type="submit" class="btn btn-primary mr-2">
+                                            Filtrar
+                                        </button>
+                                        <a href="{{ route('produtos.index') }}" class="btn btn-default">
+                                            Limpar
+                                        </a>
+                                    </div>
+
+                                </div>
+                            </form>
+
                             <div class="table-responsive">
                                 <table class="table">
-                                    <thead>
+                                    <thead class="text-primary">
                                         <tr>
-                                            <th class="text-center">ID</th>
+                                            <th>ID</th>
                                             <th>Produto</th>
-                                            <th>Descrição</th>
-                                            <th>Tabelas</th>
+                                            <th>Instituição</th>
                                             <th class="text-right">Ações</th>
                                         </tr>
                                     </thead>
-
                                     <tbody>
-                                        @foreach ($produtos as $produto)
+                                        @forelse($produtos as $produto)
                                             <tr>
-                                                <td class="text-center">{{ $produto->id }}</td>
-                                                <td> {{ $produto->produto }} </td>
-                                                <td> {{ $produto->descricao }} </td>
+                                                <td>{{ $produto->id }}</td>
+
+                                                <td>{{ $produto->produto }}</td>
+
                                                 <td>
-                                                    @if ($produto->tabelas)
-                                                        @foreach ($produto->tabelas as $tabela)
-                                                            <span style="background-color:#1565C0; color: #fff; text-transform: uppercase;" class="badge badge-default">
-                                                                {{ $tabela->nome }}
-                                                            </span>
-                                                        @endforeach
+                                                    @if ($produto->instituicao)
+                                                        {{ $produto->instituicao->nome }}
+                                                        <span class="text-muted">({{ $produto->instituicao->tipo }})</span>
+                                                    @else
+                                                        <span class="text-muted">Genérico</span>
                                                     @endif
                                                 </td>
+
                                                 <td class="td-actions text-right">
 
-                                                    @can('produtos.edit')
-                                                        <a href="{{ route('produtos.edit', $produto->id) }}">
-                                                            <button type="button" rel="tooltip" class="btn btn-info">
-                                                                <i class="material-icons">edit</i>
-                                                            </button>
-                                                        </a>
-                                                    @endcan
+                                                    {{-- Botão Editar --}}
+                                                    <a href="{{ route('produtos.edit', $produto->id) }}"
+                                                        class="btn btn-success btn-link btn-sm" title="Editar">
+                                                        <i class="material-icons">edit</i>
+                                                    </a>
 
-                                                    @can('produtos.destroy')
-                                                        <form class="d-inline"
-                                                              action="{{ route('produtos.destroy', $produto) }}"
-                                                              method="POST"
-                                                              onsubmit="return confirm('Tem certeza que deseja excluir?')">
-                                                            @method('DELETE')
-                                                            @csrf
-                                                            <button type="submit" rel="tooltip" class="btn btn-danger">
-                                                                <i class="material-icons">close</i>
-                                                            </button>
-                                                        </form>
-                                                    @endcan
+                                                    {{-- Botão Excluir --}}
+                                                    <form action="{{ route('produtos.destroy', $produto->id) }}"
+                                                        method="POST" style="display:inline-block;"
+                                                        onsubmit="return confirm('Tem certeza que deseja excluir este produto?');">
+                                                        @csrf
+                                                        @method('DELETE')
+
+                                                        <button type="submit" class="btn btn-danger btn-link btn-sm"
+                                                            title="Excluir">
+                                                            <i class="material-icons">close</i>
+                                                        </button>
+                                                    </form>
 
                                                 </td>
                                             </tr>
-                                        @endforeach
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted">Nenhum produto encontrado.
+                                                </td>
+                                            </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
-                            </div><!-- table-responsive -->
+                            </div>
+
+                            {{-- Paginação --}}
+                            <div class="row">
+                                <div class="col-md-12 d-flex justify-content-center">
+                                    {{ $produtos->links() }}
+                                </div>
+                            </div>
+
                         </div>
                         <div class="card-footer">
-                            
+                            <div class="row">
+                                <div class="col-md-12 d-flex justify-content-center">
+                                    {{ $produtos->links() }}
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>

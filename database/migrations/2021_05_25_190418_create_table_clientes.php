@@ -48,8 +48,9 @@ class CreateTableClientes extends Migration
 			$table->string('telefone_1');
 			$table->string('telefone_2')->nullable();
 			$table->string('telefone_3')->nullable();
-			$table->string('convenio')->nullable()->after('telefone');
-			$table->string('matricula')->nullable()->after('convenio');
+			$table->string('convenio')->nullable();
+			$table->string('matricula')->nullable();
+
 			$table->timestamps();
 
 			$table->unsignedBigInteger('user_id')->nullable();

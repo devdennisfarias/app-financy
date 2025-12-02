@@ -23,67 +23,103 @@ class BancoController extends Controller
 	/**
 	 * Listagem de bancos.
 	 */
-	public function index()
+	public function index(Request $request)
 	{
-		$bancos = Banco::orderBy('nome')->paginate(20);
+		$ufs = $this->listaUfs();
+		$tiposInstituicao = $this->listaTiposInstituicao();
 
-		return view('financeiro.bancos.index', [
-			'bancos' => $bancos,
-			'activePage' => 'bancos',
-		]);
+		$tipoFiltro = $request->get('tipo'); // ex: banco, promotora...
+		$ufFiltro = $request->get('uf');   // ex: SP, RJ...
+
+		$query = Banco::query()->with('ufs');
+
+		// Filtro por tipo, se informado
+		if (!empty($tipoFiltro)) {
+			$query->where('tipo', $tipoFiltro);
+		}
+
+		// Filtro por UF:
+		// - se a instituição NÃO tiver nenhum registro em banco_ufs => considerada "todos os estados"
+		// - se tiver registros em banco_ufs => precisa ter a UF escolhida
+		if (!empty($ufFiltro)) {
+			$query->where(function ($q) use ($ufFiltro) {
+				$q->whereDoesntHave('ufs') // sem estados = todos
+					->orWhereHas('ufs', function ($sub) use ($ufFiltro) {
+						$sub->where('uf', $ufFiltro);
+					});
+			});
+		}
+
+		$instituicoes = $query
+			->orderBy('nome')
+			->paginate(15)
+			->appends($request->query()); // mantém filtros na paginação
+
+		return view('financeiro.bancos.index', compact(
+			'instituicoes',
+			'ufs',
+			'tiposInstituicao',
+			'tipoFiltro',
+			'ufFiltro'
+		));
 	}
+
 
 	/**
 	 * Formulário de criação.
 	 */
 	public function create()
 	{
-		$promotoras = Promotora::orderBy('nome')->get();
-		$ufs = $this->listaUfs(); // aquele helper de UFs que te passei
-
-		return view('financeiro.bancos.form', compact('promotoras', 'ufs'));
+		// antes: view('financeiro.bancos.create')
+		return view('financeiro.bancos.form');
 	}
+	/**
+	 * Formulário de edição.
+	 */
+	public function edit($id)
+	{
+		$banco = Banco::findOrFail($id);
 
-
+		// antes: view('financeiro.bancos.edit', ...)
+		return view('financeiro.bancos.form', compact('banco'));
+	}
 
 	/**
 	 * Salva um novo banco.
 	 */
+	// app/Http/Controllers/BancoController.php
 	public function store(Request $request)
 	{
-		$ufsValidas = array_keys($this->listaUfs());
-
 		$dados = $request->validate([
 			'nome' => 'required|string|max:255',
-			'codigo' => 'nullable|string|max:20',
-
-			'promotoras' => 'nullable|array',
-			'promotoras.*' => 'exists:promotoras,id',
-
-			'ufs' => 'nullable|array',
-			'ufs.*' => 'in:' . implode(',', $ufsValidas),
+			'codigo' => 'nullable|string|max:10',
+			'tipo' => 'required|string|max:30', // ADICIONAR
 		]);
 
-		// Cria o banco
-		$banco = Banco::create([
-			'nome' => $dados['nome'],
-			'codigo' => $dados['codigo'] ?? null,
-		]);
-
-		// Relaciona promotoras
-		$banco->promotoras()->sync($dados['promotoras'] ?? []);
-
-		// Salva estados de atuação
-		if (!empty($dados['ufs'])) {
-			foreach ($dados['ufs'] as $uf) {
-				$banco->ufs()->create(['uf' => $uf]);
-			}
-		}
+		Banco::create($dados);
 
 		return redirect()
 			->route('bancos.index')
 			->withSuccess('Banco criado com sucesso.');
 	}
+
+	public function update(Request $request, $id)
+	{
+		$banco = Banco::findOrFail($id);
+
+		$dados = $request->validate([
+			'nome' => 'required|string|max:255',
+			'codigo' => 'nullable|string|max:10',
+			'tipo' => 'required|string|max:30', // ADICIONAR
+		]);
+
+		$banco->update($dados);
+
+		return redirect()
+			->route('bancos.index')
+			->withSuccess('Banco atualizado com sucesso.');
+	}
+
 
 
 	/**
@@ -95,30 +131,6 @@ class BancoController extends Controller
 
 		return view('financeiro.bancos.show', compact('banco'));
 	}
-
-	/**
-	 * Formulário de edição.
-	 */
-	public function edit($id)
-	{
-		$banco = Banco::with(['promotoras', 'ufs'])->findOrFail($id);
-		$promotoras = Promotora::orderBy('nome')->get();
-		$ufs = $this->listaUfs();
-
-		// Se quiser pode mandar os arrays já prontos, mas a view também calcula se não vierem
-		$promotorasSelecionadas = $banco->promotoras->pluck('id')->toArray();
-		$ufsSelecionadas = $banco->ufs->pluck('uf')->toArray();
-
-		return view('financeiro.bancos.form', compact(
-			'banco',
-			'promotoras',
-			'ufs',
-			'promotorasSelecionadas',
-			'ufsSelecionadas'
-		));
-	}
-
-
 
 	/**
 	 * Atualiza um banco.
@@ -212,6 +224,18 @@ class BancoController extends Controller
 			'SP' => 'São Paulo',
 			'SE' => 'Sergipe',
 			'TO' => 'Tocantins',
+		];
+	}
+
+	// Helper centralizado dos tipos de instituição
+	private function listaTiposInstituicao()
+	{
+		return [
+			'banco' => 'Banco',
+			'promotora' => 'Promotora',
+			'fintech' => 'Fintech',
+			'corresp' => 'Correspondente',
+			'outro' => 'Outro',
 		];
 	}
 

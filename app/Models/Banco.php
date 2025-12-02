@@ -41,4 +41,9 @@ class Banco extends Model
 	{
 		return $this->ufs->pluck('uf')->toArray();
 	}
+	public function instituicao()
+	{
+		return $this->belongsTo(\App\Models\Banco::class, 'banco_id');
+	}
+
 }
