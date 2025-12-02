@@ -169,6 +169,12 @@ class Proposta extends Model
 				default => 'badge-default',
 		};
 		*/
+
+
+	}
+	public function instituicao()
+	{
+		return $this->belongsTo(Banco::class, 'banco_id');
 	}
 
 

@@ -33,8 +33,8 @@
                 <div class="card">
                     <div class="card-header card-header-primary d-flex justify-content-between align-items-center">
                         <div>
-                            <h4 class="card-title">Bancos</h4>
-                            <p class="card-category">Cadastro de bancos utilizados pela FinancyCred</p>
+                            <h4 class="card-title">Instituições</h4>
+                            <p class="card-category">Cadastro de Intituições utilizados pela FinancyCred</p>
                         </div>
                         @can('bancos.create')
                             <a href="{{ route('bancos.create') }}" class="btn btn-success btn-sm">

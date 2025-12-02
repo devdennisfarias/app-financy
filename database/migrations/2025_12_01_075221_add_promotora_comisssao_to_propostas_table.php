@@ -6,34 +6,40 @@ use Illuminate\Support\Facades\Schema;
 
 class AddPromotoraComisssaoToPropostasTable extends Migration
 {
-	/**
-	 * Run the migrations.
-	 *
-	 * @return void
-	 */
 	public function up()
 	{
 		Schema::table('propostas', function (Blueprint $table) {
-			$table->unsignedBigInteger('promotora_id')->nullable()->after('produto_id');
-			$table->unsignedBigInteger('banco_id')->nullable()->after('promotora_id'); // se quiser gravar também
-			$table->decimal('porcentagem_comissao_vendedor', 8, 4)->nullable()->after('banco_id');
-			// opcional:
-			// $table->decimal('valor_comissao_vendedor', 10, 2)->nullable()->after('porcentagem_comissao_vendedor');
+			if (!Schema::hasColumn('propostas', 'promotora_id')) {
+				$table->foreignId('promotora_id')->nullable()->after('produto_id');
+			}
 
-			$table->foreign('promotora_id')->references('id')->on('promotoras');
-			$table->foreign('banco_id')->references('id')->on('bancos');
+			if (!Schema::hasColumn('propostas', 'banco_id')) {
+				$table->foreignId('banco_id')->nullable()->after('promotora_id');
+			}
+
+			if (!Schema::hasColumn('propostas', 'porcentagem_comissao_vendedor')) {
+				$table->decimal('porcentagem_comissao_vendedor', 8, 4)->nullable()->after('banco_id');
+			}
 		});
 	}
 
-	/**
-	 * Reverse the migrations.
-	 *
-	 * @return void
-	 */
 	public function down()
 	{
 		Schema::table('propostas', function (Blueprint $table) {
-			//
+			if (Schema::hasColumn('propostas', 'promotora_id')) {
+				$table->dropForeign(['promotora_id']);
+				$table->dropColumn('promotora_id');
+			}
+
+			if (Schema::hasColumn('propostas', 'banco_id')) {
+				$table->dropForeign(['banco_id']);
+				$table->dropColumn('banco_id');
+			}
+
+			if (Schema::hasColumn('propostas', 'porcentagem_comissao_vendedor')) {
+				$table->dropColumn('porcentagem_comissao_vendedor');
+			}
 		});
 	}
 }
+

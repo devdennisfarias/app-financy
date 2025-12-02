@@ -60,4 +60,10 @@ class Produto extends Model
 	{
 		return $this->hasMany(Comissao::class);
 	}
+
+	public function instituicao()
+	{
+		return $this->belongsTo(Banco::class, 'banco_id');
+	}
+
 }

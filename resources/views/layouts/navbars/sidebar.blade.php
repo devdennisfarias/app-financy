@@ -29,7 +29,7 @@
 					'produtos',
 					'users',
 					'fornecedores',
-					'bancos',
+					'Instituições',
 				]);
 
 				$propostasOpen = in_array($activePage ?? '', [
@@ -142,10 +142,10 @@
 						@endcan
 
 						@can('bancos.index')
-							<li class="nav-item{{ ($activePage ?? '') == 'bancos' ? ' active' : '' }}">
+							<li class="nav-item{{ ($activePage ?? '') == 'Instituições' ? ' active' : '' }}">
 								<a class="nav-link" href="{{ route('bancos.index') }}">
 									<i class="material-icons">account_balance_wallet</i>
-									<span class="sidebar-normal">{{ __('Bancos') }}</span>
+									<span class="sidebar-normal">{{ __('Instituições') }}</span>
 								</a>
 							</li>
 						@endcan

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class ProdutosTable extends Migration
+class CreateBancoUfsTable extends Migration
 {
 	/**
 	 * Run the migrations.
@@ -13,15 +13,15 @@ class ProdutosTable extends Migration
 	 */
 	public function up()
 	{
-		Schema::create('produtos', function (Blueprint $table) {
+		Schema::create('banco_ufs', function (Blueprint $table) {
 			$table->id();
-			$table->string('produto')->nullable();
-			$table->string('descricao')->nullable();
-			$table->foreignId('banco_id')->nullable()->constrained('bancos');
-
-
+			$table->foreignId('banco_id')
+				->constrained('bancos')
+				->onDelete('cascade');
+			$table->string('uf', 2);
 			$table->timestamps();
-			$table->softDeletes();
+
+			$table->unique(['banco_id', 'uf']);
 		});
 	}
 
@@ -32,6 +32,6 @@ class ProdutosTable extends Migration
 	 */
 	public function down()
 	{
-		Schema::dropIfExists('produtos');
+		Schema::dropIfExists('banco_ufs');
 	}
 }
