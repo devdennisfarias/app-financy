@@ -11,6 +11,21 @@ class Proposta extends Model
 	use HasFactory;
 	use SoftDeletes;
 
+	protected $fillable = [
+		'orgao',
+		'banco',
+		'valor_bruto',
+		'valor_liquido_liberado',
+		'tx_juros',
+		'valor_parcela',
+		'qtd_parcelas',
+		'produto_id',
+		'banco_id',
+		'cliente_id',
+		'user_id',
+	];
+
+
 	protected $table = 'propostas';
 
 
@@ -20,19 +35,6 @@ class Proposta extends Model
 		//@ 2 FK nesta tabela
 		//@ 3 Referencia que a FK faz
 		return $this->belongsTo(Cliente::class, 'cliente_id', 'id');
-	}
-
-	public function vendedor()
-	{
-		//@ 1 Modelo com qual me relaciono
-		//@ 2 FK nesta tabela
-		//@ 3 Referencia que a FK faz
-		return $this->belongsTo(User::class, 'user_id', 'id');
-	}
-
-	public function produto()
-	{
-		return $this->belongsTo(\App\Models\Produto::class, 'produto_id');
 	}
 
 	public function documentos()
@@ -50,15 +52,12 @@ class Proposta extends Model
 		//@ 1 Modelo com qual me relaciono
 		//@ 2 FK na tabela com que me relaciono
 		//@ 3 FK que esta tabela envia
-		return $this->hasMany(PropostaAten::class, 'proposta_id', 'id');
+		return $this->hasMany(Proposta::class, 'proposta_id', 'id');
 	}
 
 	public function status_atual()
 	{
-		//@ 1 Modelo com qual me relaciono
-		//@ 2 FK nesta tabela
-		//@ 3 Referencia que a FK faz
-		return $this->belongsTo(Status::class, 'status_atual_id', 'id');
+		return $this->belongsTo(\App\Models\Status::class, 'status_atual_id');
 	}
 
 	public function statusAtual()
@@ -73,11 +72,6 @@ class Proposta extends Model
 		//@ 2 FK nesta tabela
 		//@ 3 Referencia que a FK faz
 		return $this->belongsTo(StatusTipo::class, 'status_tipo_atual_id', 'id');
-	}
-
-	public static function propostasVendedor($id)
-	{
-		return Proposta::where('user_id', '=', $id)->get();
 	}
 
 
@@ -166,14 +160,30 @@ class Proposta extends Model
 				default => 'badge-default',
 		};
 		*/
-
-
 	}
+
 	public function instituicao()
+	{
+		return $this->belongsTo(\App\Models\Banco::class, 'banco_id');
+	}
+	public function user()
+	{
+		return $this->belongsTo(User::class);
+	}
+
+	public function produto()
+	{
+		return $this->belongsTo(Produto::class);
+	}
+
+	public function banco()
 	{
 		return $this->belongsTo(Banco::class, 'banco_id');
 	}
 
-
+	public function vendedor()
+	{
+		return $this->belongsTo(User::class, 'user_id');
+	}
 
 }
