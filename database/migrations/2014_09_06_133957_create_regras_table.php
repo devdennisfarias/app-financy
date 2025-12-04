@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTableCarteiras extends Migration
+class CreateRegrasTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,13 +13,13 @@ class CreateTableCarteiras extends Migration
      */
     public function up()
     {
-        Schema::create('carteiras', function (Blueprint $table) {
+        Schema::create('regras', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('cliente_id');
-            $table->unsignedBigInteger('user_id');
+            $table->string('regra')->nullable();
+            $table->string('descricao')->nullable();
             $table->timestamps();
-            $table->foreign('cliente_id')->references('id')->on('clientes')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users');
+            
+            $table->softDeletes();
         });
     }
 
@@ -30,6 +30,6 @@ class CreateTableCarteiras extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('carteiras');
+        Schema::dropIfExists('regras');
     }
 }

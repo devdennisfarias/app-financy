@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTableStatusTipos extends Migration
+class CreateDocumentosTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +13,15 @@ class CreateTableStatusTipos extends Migration
      */
     public function up()
     {
-        Schema::create('status_tipos', function (Blueprint $table) {
+
+        Schema::create('documentos', function (Blueprint $table) {
             $table->id();
-            $table->string('tipo_status');
+            $table->string('path');
+            $table->string('extencao');
             $table->timestamps();
+
+            $table->unsignedBigInteger('proposta_id')->nullable();
+            $table->foreign('proposta_id')->references('id')->on('propostas');
 
             $table->softDeletes();
         });
@@ -29,6 +34,6 @@ class CreateTableStatusTipos extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('status_tipos');
+        Schema::dropIfExists('documentos');
     }
 }
