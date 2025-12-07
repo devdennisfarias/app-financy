@@ -11,6 +11,12 @@ class Proposta extends Model
 	use HasFactory;
 	use SoftDeletes;
 
+	protected $table = 'propostas';
+
+	/**
+	 * Campos liberados para mass assignment.
+	 * Se tiver mais colunas na tabela, pode acrescentar aqui depois.
+	 */
 	protected $fillable = [
 		'orgao',
 		'banco',
@@ -23,152 +29,81 @@ class Proposta extends Model
 		'banco_id',
 		'cliente_id',
 		'user_id',
+		'status_atual_id',
+		'status_tipo_atual_id',
+		'tabela_digitada',
+		'observacao',
 	];
 
+	protected $casts = [
+		'valor_bruto' => 'float',
+		'valor_liquido_liberado' => 'float',
+		'tx_juros' => 'float',
+		'valor_parcela' => 'float',
+		'qtd_parcelas' => 'integer',
+	];
 
-	protected $table = 'propostas';
-
+	/*
+	|--------------------------------------------------------------------------
+	| RELACIONAMENTOS
+	|--------------------------------------------------------------------------
+	*/
 
 	public function cliente()
 	{
-		//@ 1 Modelo com qual me relaciono
-		//@ 2 FK nesta tabela
-		//@ 3 Referencia que a FK faz
-		return $this->belongsTo(Cliente::class, 'cliente_id', 'id');
+		return $this->belongsTo(Cliente::class, 'cliente_id');
 	}
 
 	public function documentos()
 	{
-		//HASMANY
-		//@ 1 Modelo com qual me relaciono
-		//@ 2 FK na tabela com que me relaciono
-		//@ 3 FK que esta tabela envia
 		return $this->hasMany(Documento::class, 'proposta_id', 'id');
 	}
 
 	public function atendimentos()
 	{
-		//HASMANY
-		//@ 1 Modelo com qual me relaciono
-		//@ 2 FK na tabela com que me relaciono
-		//@ 3 FK que esta tabela envia
+		// Mantido conforme padrão antigo, se você usar.
 		return $this->hasMany(Proposta::class, 'proposta_id', 'id');
 	}
 
+	/**
+	 * Status principal da proposta (tabela status).
+	 * Usar nas telas: $proposta->status_atual->status
+	 */
 	public function status_atual()
 	{
-		return $this->belongsTo(\App\Models\Status::class, 'status_atual_id');
+		return $this->belongsTo(Status::class, 'status_atual_id');
 	}
 
-	public function statusAtual()
+	/**
+	 * Alias: $proposta->status
+	 */
+	public function status()
 	{
-		return $this->belongsTo(\App\Models\Status::class, 'status_atual_id');
+		return $this->status_atual();
 	}
 
-
+	/**
+	 * Tipo de status (tabela status_tipos).
+	 * Usado mais para regras internas (esteira, KPIs, etc).
+	 */
 	public function status_tipo_atual()
 	{
-		//@ 1 Modelo com qual me relaciono
-		//@ 2 FK nesta tabela
-		//@ 3 Referencia que a FK faz
 		return $this->belongsTo(StatusTipo::class, 'status_tipo_atual_id', 'id');
 	}
 
-
-	public static function qtdPagos()
-	{
-		return Proposta::select('propostas.*')
-			->where('status_tipo_atual_id', '=', 4)
-			->count();
-	}
-
-	public static function totalLiqPago()
-	{
-		return Proposta::select('propostas.*')
-			->where('status_tipo_atual_id', '=', 4)
-			->sum('valor_liquido_liberado');
-	}
-
-	public static function qtdDigitados()
-	{
-		return Proposta::select('propostas.*')->count();
-	}
-
-	public static function totalEmAndamento()
-	{
-		return Proposta::select('propostas.*')
-			->where('status_tipo_atual_id', '!=', 5) //TODOS MENOS OS CANCELADOS
-			->sum('valor_liquido_liberado');
-	}
-
-	public static function qtdCancelado()
-	{
-		return Proposta::select('propostas.*')
-			->where('status_tipo_atual_id', '=', 5)
-			->count();
-	}
-
-	public static function totalLiqCancelado()
-	{
-		return Proposta::select('propostas.*')
-			->where('status_tipo_atual_id', '=', 5)
-			->sum('valor_liquido_liberado');
-	}
-
-	// use App\Models\StatusTipo;  <-- garante que tenha esse use no topo
-
 	public function statusTipoAtual()
 	{
-		return $this->belongsTo(StatusTipo::class, 'status_tipo_atual_id');
-	}
-
-	/**
-	 * Texto amigável do status (vem de status_tipos)
-	 */
-	public function getStatusTipoDescricaoAttribute()
-	{
-		// ajuste o campo conforme sua migration/status_tipos (descricao, nome, titulo, etc)
-		return optional($this->statusTipoAtual)->descricao ?? 'Não informado';
-	}
-
-	/**
-	 * Classe CSS do badge, baseado no tipo/status_tipos.
-	 * Se você tiver um campo 'slug' ou 'codigo' em status_tipos, melhor usar ele.
-	 */
-	public function getStatusTipoBadgeClassAttribute()
-	{
-		// se tiver 'slug' em status_tipos, use:
-		$slug = optional($this->statusTipoAtual)->slug;
-
-		return match ($slug) {
-			'cadastrada' => 'badge-secondary',
-			'andamento' => 'badge-info',
-			'pendente' => 'badge-warning',
-			'concluida' => 'badge-success',
-			'cancelada' => 'badge-danger',
-			default => 'badge-default',
-		};
-
-		// Se ainda não tiver slug e quiser manter por ID:
-		/*
-		return match ($this->status_tipo_atual_id) {
-				1 => 'badge-secondary',
-				2 => 'badge-info',
-				3 => 'badge-warning',
-				4 => 'badge-success',
-				5 => 'badge-danger',
-				default => 'badge-default',
-		};
-		*/
+		return $this->status_tipo_atual();
 	}
 
 	public function instituicao()
 	{
-		return $this->belongsTo(\App\Models\Banco::class, 'banco_id');
+		return $this->belongsTo(Banco::class, 'banco_id');
 	}
+
 	public function user()
 	{
-		return $this->belongsTo(User::class);
+		return $this->belongsTo(User::class, 'user_id');
 	}
 
 	public function produto()
@@ -186,4 +121,78 @@ class Proposta extends Model
 		return $this->belongsTo(User::class, 'user_id');
 	}
 
+	/*
+	|--------------------------------------------------------------------------
+	| MÉTODOS ESTÁTICOS DE KPI (USANDO IDs 4 e 5, COMO JÁ EXISTIA)
+	|--------------------------------------------------------------------------
+	|
+	| Aqui mantenho a lógica original (ID 4 = pago, ID 5 = cancelado),
+	| pra não quebrar nada no banco atual.
+	|--------------------------------------------------------------------------
+	*/
+
+	public static function qtdPagos(): int
+	{
+		return static::where('status_tipo_atual_id', 4)->count();
+	}
+
+	public static function totalLiqPago(): float
+	{
+		return (float) static::where('status_tipo_atual_id', 4)
+			->sum('valor_liquido_liberado');
+	}
+
+	public static function qtdDigitados(): int
+	{
+		return static::count();
+	}
+
+	public static function totalEmAndamento(): float
+	{
+		// Aqui considerei "em andamento" tudo que NÃO é cancelado (5).
+		// Se quiser excluir os pagos (4) também, é só usar whereNotIn([4,5]).
+		return (float) static::where('status_tipo_atual_id', '!=', 5)
+			->sum('valor_liquido_liberado');
+	}
+
+	public static function qtdCancelado(): int
+	{
+		return static::where('status_tipo_atual_id', 5)->count();
+	}
+
+	public static function totalLiqCancelado(): float
+	{
+		return (float) static::where('status_tipo_atual_id', 5)
+			->sum('valor_liquido_liberado');
+	}
+
+	/*
+	|--------------------------------------------------------------------------
+	| ACCESSORS PARA STATUS_TIPO (caso queira usar em chips/badges)
+	|--------------------------------------------------------------------------
+	*/
+
+	public function getStatusTipoDescricaoAttribute(): ?string
+	{
+		$tipo = $this->status_tipo_atual;
+
+		if (!$tipo) {
+			return null;
+		}
+
+		return $tipo->descricao
+			?? $tipo->nome
+			?? null;
+	}
+
+	public function getStatusTipoBadgeClassAttribute(): string
+	{
+		$tipoId = optional($this->status_tipo_atual)->id;
+
+		return match ($tipoId) {
+			4 => 'badge-success', // pago
+			5 => 'badge-danger',  // cancelado
+			default => 'badge-default',
+		};
+	}
 }

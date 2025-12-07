@@ -6,30 +6,32 @@ use Illuminate\Support\Facades\Schema;
 
 class CreateRegrasTable extends Migration
 {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
-    public function up()
-    {
-        Schema::create('regras', function (Blueprint $table) {
-            $table->id();
-            $table->string('regra')->nullable();
-            $table->string('descricao')->nullable();
-            $table->timestamps();
-            
-            $table->softDeletes();
-        });
-    }
+	/**
+	 * Run the migrations.
+	 *
+	 * @return void
+	 */
+	public function up()
+	{
+		// ✅ NÃO TENTA CRIAR SE A TABELA JÁ EXISTIR
+		if (!Schema::hasTable('regras')) {
+			Schema::create('regras', function (Blueprint $table) {
+				$table->id();
+				$table->string('regra')->nullable();
+				$table->string('descricao')->nullable();
+				$table->timestamps();
+				$table->softDeletes();
+			});
+		}
+	}
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
-    {
-        Schema::dropIfExists('regras');
-    }
+	/**
+	 * Reverse the migrations.
+	 *
+	 * @return void
+	 */
+	public function down()
+	{
+		Schema::dropIfExists('regras');
+	}
 }

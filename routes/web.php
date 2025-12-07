@@ -90,6 +90,7 @@ Route::group(['middleware' => 'auth'], function () {
 
 	/* INICIO ROTAS DE ESTEIRA */
 	Route::resource('esteira', EsteiraController::class)->names('esteira');
+	Route::post('esteira/atualizar-status', [EsteiraController::class, 'atualizarStatus'])->name('esteira.atualizar-status')->middleware('can:propostas.edit');
 	/* FIM ROTAS DE ESTEIRA */
 
 	/* INICIO ROTAS DE ATENDIMENTO */
@@ -106,11 +107,6 @@ Route::group(['middleware' => 'auth'], function () {
 	/* INICIO ROTAS DE CARTEIRAS */
 	Route::resource('carteiras', CarteiraController::class)->names('carteiras');
 	/* FIM ROTAS DE CARTEIRAS */
-
-	/* INICIO ROTAS DE  PROPOSTAS POR USUARIOS*/
-	Route::get('propostas-usuario', [PropostaController::class, 'porUsuario'])->name('propostas.usuario');
-
-	/* FIM ROTAS DE PROPOSTAS */
 
 	/* INICIO ROTAS DE TABELA COMISSÕES */
 	Route::resource('tabelas', TabelaController::class)->names('tabelas');

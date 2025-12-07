@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
 			BancosTableSeeder::class,
 			ProdutoTableSeeder::class,
 			TabelaTableSeeder::class,
+			AcessosExternosSeeder::class,
+			ConveniosSeeder::class
 		]);
 	}
 

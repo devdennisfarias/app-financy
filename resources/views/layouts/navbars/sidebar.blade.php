@@ -180,14 +180,6 @@
 								<span class="sidebar-normal">{{ __('Todas as Propostas') }}</span>
 							</a>
 						</li>
-
-						<li class="nav-item{{ ($activePage ?? '') == 'propostas-usuario' ? ' active' : '' }}">
-							<a class="nav-link" href="{{ route('propostas.usuario') }}">
-								<i class="material-icons">person_search</i>
-								<span class="sidebar-normal">{{ __('Propostas por Usuário') }}</span>
-							</a>
-						</li>
-
 						<li class="nav-item{{ ($activePage ?? '') == 'esteira' ? ' active' : '' }}">
 							<a class="nav-link" href="{{ route('esteira.index') }}">
 								<i class="material-icons">format_indent_increase</i>

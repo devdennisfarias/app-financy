@@ -7,11 +7,13 @@ use App\Models\Proposta;
 use App\Models\Cliente;
 use App\Models\Documento;
 use App\Models\Produto;
-use App\Models\Status;
 use App\Models\User;
 use App\Models\Comissao;
+use App\Models\Status;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\StorePropostaRequest;
+use App\Http\Requests\UpdatePropostaRequest;
 
 class PropostaController extends Controller
 {
@@ -25,7 +27,8 @@ class PropostaController extends Controller
 
 	public function index(Request $request)
 	{
-		// listagem controlada pelo Livewire
+		// A listagem de "Todas as Propostas" é controlada pelo componente Livewire
+		// @livewire('propostas-index'), então aqui só retornamos a view.
 		return view('propostas.index', [
 			'activePage' => 'propostas',
 			'titlePage' => 'Lista de propostas',
@@ -51,7 +54,12 @@ class PropostaController extends Controller
 
 	public function edit($id)
 	{
-		$proposta = Proposta::with(['produto.instituicao'])->findOrFail($id);
+		$proposta = Proposta::with([
+			'produto.instituicao',
+			'cliente',
+			'vendedor',
+			'status_atual',
+		])->findOrFail($id);
 
 		$produtos = Produto::with('instituicao')
 			->orderBy('produto')
@@ -59,88 +67,86 @@ class PropostaController extends Controller
 
 		$user = Auth::user();
 
+		// LISTA DE STATUS PARA O SELECT
+		$statusList = Status::orderBy('status')->get();
+
 		return view('propostas.edit', compact(
 			'proposta',
 			'produtos',
-			'user'
+			'user',
+			'statusList'
 		));
 	}
 
 	public function store(Request $request)
 	{
-		// 1) Normaliza campos monetários (pt-BR -> padrão numérico)
-		$this->normalizaCamposMonetarios($request, [
-			'valor_bruto',
-			'valor_liquido_liberado',
-			'valor_parcela',
-			'tx_juros',
-		]);
+		// Normaliza campos numéricos (R$ 1.234,56 -> 1234.56 / 0,0 % -> 0.0)
+		$this->normalizarCamposNumericos($request);
 
-		// 2) Validação
 		$dados = $request->validate([
 			'cpf' => 'required|string',
 			'produto_id' => 'required|exists:produtos,id',
-			'orgao' => 'nullable|string|max:191',
-			'banco' => 'nullable|string|max:191',
+			'banco_id' => 'nullable|exists:bancos,id',
+			'banco' => 'nullable|string',
+			'orgao' => 'nullable|string',
 			'valor_bruto' => 'nullable|numeric',
 			'valor_liquido_liberado' => 'nullable|numeric',
 			'tx_juros' => 'nullable|numeric',
 			'valor_parcela' => 'nullable|numeric',
 			'qtd_parcelas' => 'nullable|integer',
-			'banco_id' => 'nullable|exists:bancos,id',
+			// se no futuro tiver select de status no cadastro, a gente aceita
+			'status_atual_id' => 'nullable|exists:status,id',
 		]);
 
-		// 3) usuário logado
-		$dados['user_id'] = Auth::id();
-
-		// 4) resolve cliente pelo CPF (obrigatório)
-		$cpf = preg_replace('/\D/', '', $dados['cpf']);
-		$cliente = Cliente::whereRaw('REPLACE(REPLACE(REPLACE(cpf, ".", ""), "-", ""), "/", "") = ?', [$cpf])->first();
+		// CLIENTE pelo CPF
+		$cliente = Cliente::where('cpf', $dados['cpf'])->first();
 
 		if (!$cliente) {
 			return back()
-				->withErrors(['cpf' => 'Cliente não encontrado. Cadastre o cliente antes de criar a proposta.'])
-				->withInput();
+				->withInput()
+				->withErrors(['cpf' => 'Cliente não encontrado. Cadastre o cliente antes de criar a proposta.']);
 		}
 
-		$dados['cliente_id'] = $cliente->id;
+		// Se banco_id não vier, tenta puxar do produto (instituicao)
+		if (empty($dados['banco_id']) && !empty($dados['produto_id'])) {
+			$produto = Produto::with('instituicao')->find($dados['produto_id']);
 
-		// 5) resolve banco a partir do produto se não vier do front
-		$produto = Produto::with('instituicao')->find($dados['produto_id']);
-
-		if ($produto && $produto->instituicao) {
-			if (empty($dados['banco_id'])) {
+			if ($produto && $produto->instituicao) {
 				$dados['banco_id'] = $produto->instituicao->id;
-			}
-
-			if (empty($dados['banco'])) {
-				$dados['banco'] = $produto->instituicao->nome;
+				// se não veio o nome do banco, usa o da instituição
+				if (empty($dados['banco'])) {
+					$dados['banco'] = $produto->instituicao->nome;
+				}
 			}
 		}
 
-		// não precisa gravar cpf em propostas
+		// Preenche infos adicionais
+		$dados['cliente_id'] = $cliente->id;
+		$dados['user_id'] = Auth::id();
+
+		/**
+		 * STATUS INICIAL:
+		 * - se vier um status_atual_id do formulário, usa ele
+		 * - senão, define como "Cadastrada"
+		 */
+		if (empty($dados['status_atual_id'])) {
+			$defaultStatus = Status::whereRaw('LOWER(status) = ?', ['cadastrada'])->first();
+
+			if ($defaultStatus) {
+				$dados['status_atual_id'] = $defaultStatus->id;
+			}
+		}
+
+		// CPF não é coluna de propostas (é de cliente), então removo do array
 		unset($dados['cpf']);
 
-		// status inicial: Cadastrada
-		$defaultStatus = Status::where('status', 'Cadastrada')->first();
-
-		if ($defaultStatus) {
-			$dados['status_atual_id'] = $defaultStatus->id;
-		}
-
-		// (se tiver também coluna status_tipo_atual_id e quiser setar um tipo padrão, pode fazer aqui)
-
-		// cria a proposta
 		$proposta = Proposta::create($dados);
 
-
-		$proposta = Proposta::create($dados);
-
+		// Depois de cadastrar, faz sentido ir pra edição completa
 		return redirect()
 			->route('propostas.edit', $proposta->id)
 			->with('success', 'Proposta criada com sucesso.');
 	}
-
 
 	public function show(Proposta $proposta)
 	{
@@ -151,45 +157,51 @@ class PropostaController extends Controller
 	{
 		$proposta = Proposta::findOrFail($id);
 
-		// normaliza antes de validar
-		$this->normalizaCamposMonetarios($request, [
-			'valor_bruto',
-			'valor_liquido_liberado',
-			'valor_parcela',
-			'tx_juros',
-		]);
+		// Normaliza campos numéricos antes de validar
+		$this->normalizarCamposNumericos($request);
 
 		$dados = $request->validate([
 			'produto_id' => 'required|exists:produtos,id',
-			'orgao' => 'nullable|string|max:191',
-			'banco' => 'nullable|string|max:191',
+			'banco_id' => 'nullable|exists:bancos,id',
+			'banco' => 'nullable|string',
+			'orgao' => 'nullable|string',
 			'valor_bruto' => 'nullable|numeric',
 			'valor_liquido_liberado' => 'nullable|numeric',
 			'tx_juros' => 'nullable|numeric',
 			'valor_parcela' => 'nullable|numeric',
 			'qtd_parcelas' => 'nullable|integer',
-			'banco_id' => 'nullable|exists:bancos,id',
+			'status_atual_id' => 'nullable|exists:status,id',
 		]);
 
-		$produto = Produto::with('instituicao')->find($dados['produto_id']);
+		// Se banco_id não vier, tenta puxar do produto
+		if (empty($dados['banco_id']) && !empty($dados['produto_id'])) {
+			$produto = Produto::with('instituicao')->find($dados['produto_id']);
 
-		if ($produto && $produto->instituicao) {
-			if (empty($dados['banco_id'])) {
+			if ($produto && $produto->instituicao) {
 				$dados['banco_id'] = $produto->instituicao->id;
-			}
-
-			if (empty($dados['banco'])) {
-				$dados['banco'] = $produto->instituicao->nome;
+				if (empty($dados['banco'])) {
+					$dados['banco'] = $produto->instituicao->nome;
+				}
 			}
 		}
 
 		$proposta->update($dados);
 
+		// --- REDIRECIONAMENTO FLEXÍVEL ---
+		// se veio "from=esteira" na request, volta para a esteira
+		$from = $request->input('from') ?? $request->input('redirect_to');
+
+		if ($from === 'esteira') {
+			return redirect()
+				->route('esteira.index')
+				->with('success', 'Proposta atualizada com sucesso.');
+		}
+
+		// fluxo padrão: permanece na tela de edição da proposta
 		return redirect()
 			->route('propostas.edit', $proposta->id)
 			->with('success', 'Proposta atualizada com sucesso.');
 	}
-
 
 	public function destroy($id)
 	{
@@ -223,6 +235,7 @@ class PropostaController extends Controller
 		$usuarios = User::orderBy('name')->get();
 
 		$userId = $request->input('user_id', auth()->id());
+
 		$usuarioSelecionado = $usuarios->firstWhere('id', $userId) ?? $usuarios->first();
 
 		$query = Proposta::where('user_id', $usuarioSelecionado->id);
@@ -312,27 +325,55 @@ class PropostaController extends Controller
 		return null;
 	}
 
-	protected function normalizaCamposMonetarios(Request $request, array $campos)
+	/**
+	 * Normaliza campos numéricos vindos no formato brasileiro
+	 * (R$ 1.234,56, 0,0 %, etc) para formato decimal (1234.56).
+	 */
+	protected function normalizarCamposNumericos(Request $request): void
 	{
+		$campos = [
+			'valor_bruto',
+			'valor_liquido_liberado',
+			'tx_juros',
+			'valor_parcela',
+		];
+
+		$normalizados = [];
+
 		foreach ($campos as $campo) {
-			$valorOriginal = $request->input($campo);
-
-			if ($valorOriginal === null || $valorOriginal === '') {
-				continue;
+			if ($request->filled($campo)) {
+				$normalizados[$campo] = $this->brToDecimal($request->input($campo));
 			}
+		}
 
-			// Remove tudo que não for dígito, ponto ou vírgula
-			$valor = preg_replace('/[^0-9\.,]/', '', $valorOriginal);
-
-			// Remove separador de milhar (ponto) e troca vírgula por ponto
-			// Ex: "1.234,56" -> "1234,56" -> "1234.56"
-			$valor = str_replace('.', '', $valor);
-			$valor = str_replace(',', '.', $valor);
-
-			$request->merge([
-				$campo => $valor,
-			]);
+		if (!empty($normalizados)) {
+			$request->merge($normalizados);
 		}
 	}
 
+	/**
+	 * Converte string em formato BR para decimal em string (para gravar no BD).
+	 */
+	protected function brToDecimal(?string $valor): ?string
+	{
+		if ($valor === null) {
+			return null;
+		}
+
+		$valor = trim($valor);
+		if ($valor === '') {
+			return null;
+		}
+
+		// Remove R$, %, espaços
+		$valor = str_replace(['R$', '%', ' '], '', $valor);
+
+		// Remove ponto de milhar
+		$valor = str_replace('.', '', $valor);
+
+		// Troca vírgula por ponto
+		$valor = str_replace(',', '.', $valor);
+
+		return $valor;
+	}
 }

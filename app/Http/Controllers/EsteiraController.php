@@ -2,129 +2,123 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Produto;
+use App\Models\Convenio;
 use App\Models\Proposta;
-use App\Models\StatusTipo;
+use App\Models\Status;
 use App\Models\User;
+use App\Models\Produto;
 use Illuminate\Http\Request;
 
 class EsteiraController extends Controller
 {
 	public function __construct()
 	{
-		// você pode usar 'producao.index' ou criar 'esteira.index' se quiser ser mais granular
-		$this->middleware('can:producao.index')->only('index');
+		$this->middleware('can:propostas.index')->only(['index']);
 	}
 
-	/**
-	 * Esteira de Propostas (pipeline)
-	 */
 	public function index(Request $request)
 	{
-		$query = Proposta::query();
-
-		// Usuários (para filtro)
 		$usuarios = User::orderBy('name')->get();
+		$produtos = Produto::orderBy('produto')->get();
+		$convenios = Convenio::where('ativo', true)->orderBy('nome')->get();
+		$statusList = Status::orderBy('status')->get();
 
-		// Status tipos (para filtro de etapa da esteira)
-		$statusTipos = StatusTipo::orderBy('id')->get();
+		$query = Proposta::with(['cliente.convenio', 'produto', 'user', 'status_atual'])
+			->whereHas('status_atual', function ($q) {
+				$q->whereNotIn('status', [
+					'Pago',
+					'Cancelado',
+					'Concluído',
+					'Concluída',
+				]);
+			})
+			->orderByDesc('created_at');
 
-		// Query base
-
-		$produtos = Produto::orderBy('id')->get();
-
-
-		// ===== FILTROS =====
-
-		// Data de criação
+		// Filtros já existentes...
 		if ($request->filled('data_inicio')) {
-			$query->whereDate('created_at', '>=', $request->data_inicio);
+			$query->whereDate('created_at', '>=', $request->input('data_inicio'));
 		}
 
 		if ($request->filled('data_fim')) {
-			$query->whereDate('created_at', '<=', $request->data_fim);
+			$query->whereDate('created_at', '<=', $request->input('data_fim'));
 		}
 
-		// Usuário
 		if ($request->filled('user_id')) {
-			$query->where('user_id', $request->user_id);
+			$query->where('user_id', $request->input('user_id'));
 		}
 
 		if ($request->filled('produto')) {
-			$query->where('produto_id', $request->produto);
+			$query->where('produto_id', $request->input('produto'));
 		}
 
-
-		// Órgão
-		if ($request->filled('orgao')) {
-			$query->where('orgao', 'like', '%' . $request->orgao . '%');
-		}
-
-		// Banco
 		if ($request->filled('banco')) {
-			$query->where('banco', 'like', '%' . $request->banco . '%');
+			$query->where('banco', 'like', '%' . $request->input('banco') . '%');
 		}
 
-		// CPF do cliente
 		if ($request->filled('cpf')) {
-			$cpf = preg_replace('/\D/', '', $request->cpf); // só números
+			$cpf = preg_replace('/\D/', '', $request->input('cpf'));
 			$query->whereHas('cliente', function ($q) use ($cpf) {
 				$q->where('cpf', 'like', '%' . $cpf . '%');
 			});
 		}
 
-		// Nome do cliente
 		if ($request->filled('nome')) {
-			$nome = $request->nome;
+			$nome = $request->input('nome');
 			$query->whereHas('cliente', function ($q) use ($nome) {
 				$q->where('nome', 'like', '%' . $nome . '%');
 			});
 		}
 
-		// Status da esteira (status_tipo_atual_id)
-		if ($request->filled('status_tipo_atual_id')) {
-			$query->where('status_tipo_atual_id', $request->status_tipo_atual_id);
+		// 🔹 Filtro por STATUS
+		if ($request->filled('status_atual_id')) {
+			$query->where('status_atual_id', $request->input('status_atual_id'));
 		}
 
-		// ===== CARREGA PROPOSTAS (planilha) =====
-		$propostas = $query
-			->with(['cliente', 'produto', 'user'])
-			->orderByDesc('created_at')
-			->paginate(30);
+		// 🔹 Filtro por CONVÊNIO
+		if ($request->filled('convenio_id')) {
+			$convenioId = $request->input('convenio_id');
+			$query->whereHas('cliente', function ($q) use ($convenioId) {
+				$q->where('convenio_id', $convenioId);
+			});
+		}
 
-		// ===== RESUMO (KPIs simples) =====
+		$propostas = $query->paginate(30);
+
+		// KPIs (mantém a mesma lógica)
 		$baseQuery = clone $query;
 
 		$resumo = [
 			'total' => (clone $baseQuery)->count(),
-			// ajusta condições de aprovado/pendente conforme sua regra
-			'aprovadas' => (clone $baseQuery)->where('status_tipo_atual_id', 4)->count(),
-			'pendentes' => (clone $baseQuery)->whereIn('status_tipo_atual_id', [1, 2, 3])->count(),
+			'aprovadas' => (clone $baseQuery)->whereHas('status_atual', function ($q) {
+				$q->where('status', 'like', 'Aprov%');
+			})->count(),
+			'pendentes' => 0,
 			'valor_total' => (clone $baseQuery)->sum('valor_liquido_liberado'),
 		];
 
-		// Filtros para reaproveitar na view
+		$resumo['pendentes'] = $resumo['total'] - $resumo['aprovadas'];
+
 		$filtros = $request->only([
 			'data_inicio',
 			'data_fim',
 			'user_id',
 			'produto',
-			'orgao',
 			'banco',
 			'cpf',
 			'nome',
-			'status_tipo_atual_id',
+			'convenio_id',
+			'status_atual_id',
 		]);
 
 		return view('esteira.index', [
 			'propostas' => $propostas,
 			'usuarios' => $usuarios,
-			'statusTipos' => $statusTipos,
 			'produtos' => $produtos,
-			'filtros' => $filtros,
+			'convenios' => $convenios,
+			'statusList' => $statusList,
 			'resumo' => $resumo,
+			'filtros' => $filtros,
 			'activePage' => 'esteira',
 		]);
 	}
-
 }

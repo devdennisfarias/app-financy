@@ -5,117 +5,141 @@ namespace App\Http\Livewire;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Proposta;
-use App\Models\Produto;
-use App\Models\Banco;
 use App\Models\Status;
+use App\Models\Banco;
+use App\Models\Produto;
+use App\Models\User;
 
 class PropostasIndex extends Component
 {
 	use WithPagination;
 
-	// filtros
 	public $search = '';
-	public $cpf = '';
-	public $produtoId = '';
-	public $bancoId = '';
-	public $statusId = '';
 
-	// coleções usadas nos selects
-	public $produtos = [];
-	public $bancos = [];
-	public $statuses = [];
+	public $status = '';
+	public $banco = '';
+	public $produto = '';
+	public $vendedor = '';
+	public $data_inicio;
+	public $data_fim;
+
+	public $perPage = 15;
 
 	protected $updatesQueryString = [
-		'search',
-		'cpf',
-		'produtoId',
-		'bancoId',
-		'statusId',
+		'search' => ['except' => ''],
+		'status' => ['except' => ''],
+		'banco' => ['except' => ''],
+		'produto' => ['except' => ''],
+		'vendedor' => ['except' => ''],
+		'data_inicio' => ['except' => null],
+		'data_fim' => ['except' => null],
+		'page' => ['except' => 1],
 	];
 
-	public function mount()
-	{
-		// carrega as listas para os filtros
-		$this->produtos = Produto::orderBy('produto')->get();
-		$this->bancos = Banco::orderBy('nome')->get();
-		$this->statuses = Status::orderBy('status')->get();
-	}
+	protected $paginationTheme = 'bootstrap';
 
-	// sempre que mudar algum filtro, volta pra página 1
 	public function updatingSearch()
 	{
 		$this->resetPage();
 	}
-	public function updatingCpf()
+	public function updatingStatus()
 	{
 		$this->resetPage();
 	}
-	public function updatingProdutoId()
+	public function updatingBanco()
 	{
 		$this->resetPage();
 	}
-	public function updatingBancoId()
+	public function updatingProduto()
 	{
 		$this->resetPage();
 	}
-	public function updatingStatusId()
+	public function updatingVendedor()
+	{
+		$this->resetPage();
+	}
+	public function updatingDataInicio()
+	{
+		$this->resetPage();
+	}
+	public function updatingDataFim()
 	{
 		$this->resetPage();
 	}
 
 	public function render()
 	{
-		$query = Proposta::query()
-			->with(['vendedor', 'cliente', 'produto', 'status_atual']);
+		$query = Proposta::with([
+			'cliente',
+			'produto',
+			'banco',
+			'status_atual',
+			'vendedor',
+		])
+			->latest();
 
-		// busca livre
-		if (!empty($this->search)) {
-			$s = '%' . $this->search . '%';
+		// Busca geral
+		if ($this->search) {
+			$search = '%' . $this->search . '%';
 
-			$query->where(function ($q) use ($s) {
-				$q->where('id', 'like', $s)
-					->orWhere('orgao', 'like', $s)
-					->orWhere('banco', 'like', $s)
-					->orWhereHas('cliente', function ($sub) use ($s) {
-						$sub->where('nome', 'like', $s)
-							->orWhere('cpf', 'like', $s);
+			$query->where(function ($q) use ($search) {
+				$q->where('id', 'like', $search)
+					->orWhereHas('cliente', function ($q2) use ($search) {
+						$q2->where('nome', 'like', $search)
+							->orWhere('cpf', 'like', $search);
+					})
+					->orWhereHas('banco', function ($q3) use ($search) {
+						$q3->where('nome', 'like', $search);
+					})
+					->orWhere('banco', 'like', $search)
+					->orWhereHas('produto', function ($q4) use ($search) {
+						$q4->where('produto', 'like', $search);
+					})
+					->orWhereHas('vendedor', function ($q5) use ($search) {
+						$q5->where('name', 'like', $search);
 					});
 			});
 		}
 
-		// filtro por CPF (cliente)
-		if (!empty($this->cpf)) {
-			$cpfLimpo = preg_replace('/\D/', '', $this->cpf);
-
-			$query->whereHas('cliente', function ($q) use ($cpfLimpo) {
-				$q->where('cpf', 'like', '%' . $cpfLimpo . '%');
-			});
+		// Filtros
+		if ($this->status !== '' && $this->status !== null) {
+			$query->where('status_atual_id', $this->status);
 		}
 
-		// filtro por Produto
-		if (!empty($this->produtoId)) {
-			$query->where('produto_id', $this->produtoId);
+		if ($this->banco !== '' && $this->banco !== null) {
+			$query->where('banco_id', $this->banco);
 		}
 
-		// filtro por Banco (campo banco_id da proposta)
-		if (!empty($this->bancoId)) {
-			$query->where('banco_id', $this->bancoId);
+		if ($this->produto !== '' && $this->produto !== null) {
+			$query->where('produto_id', $this->produto);
 		}
 
-		// filtro por Status
-		if (!empty($this->statusId)) {
-			$query->where('status_atual_id', $this->statusId);
+		if ($this->vendedor !== '' && $this->vendedor !== null) {
+			$query->where('user_id', $this->vendedor);
 		}
 
-		$propostas = $query
-			->orderByDesc('created_at')
-			->paginate(15);
+		if ($this->data_inicio) {
+			$query->whereDate('created_at', '>=', $this->data_inicio);
+		}
+
+		if ($this->data_fim) {
+			$query->whereDate('created_at', '<=', $this->data_fim);
+		}
+
+		$propostas = $query->paginate($this->perPage);
+
+		// Listas para selects
+		$statusList = Status::orderBy('status')->get();
+		$bancos = Banco::orderBy('nome')->get();
+		$produtos = Produto::orderBy('produto')->get();
+		$vendedores = User::orderBy('name')->get();
 
 		return view('livewire.propostas-index', [
 			'propostas' => $propostas,
-			'produtos' => $this->produtos,
-			'bancos' => $this->bancos,
-			'statuses' => $this->statuses,
+			'statusList' => $statusList,
+			'bancos' => $bancos,
+			'produtos' => $produtos,
+			'vendedores' => $vendedores,
 		]);
 	}
 }

@@ -23,23 +23,24 @@
 
                                 {{-- Banco / Sistema (SELECT COM NOVO LAYOUT) --}}
                                 <div class="row">
+
                                     <div class="col-md-6">
-                                        <div class="input-group input-group-static mb-4">
-                                            <label for="nome" class="ms-0">Banco / Sistema *</label>
-                                            <select name="nome" id="nome" class="form-control" required>
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="nome" class="ms-0">Banco / Sistema</label>
+                                            <select name="nome" id="nome" class="form-control">
                                                 <option value="">Selecione...</option>
+
                                                 @foreach ($bancos as $nomeBanco => $nomeBancoExibicao)
                                                     <option value="{{ $nomeBanco }}"
-                                                        {{ old('nome', $acesso->nome) == $nomeBanco ? 'selected' : '' }}>
+                                                        {{ old('nome', $acesso->nome) === $nomeBanco ? 'selected' : '' }}>
                                                         {{ $nomeBancoExibicao }}
                                                     </option>
                                                 @endforeach
                                             </select>
-                                            @error('nome')
-                                                <span class="text-danger">{{ $message }}</span>
-                                            @enderror
                                         </div>
                                     </div>
+
+
 
                                     {{-- Link --}}
                                     <div class="col-md-6">

@@ -70,11 +70,20 @@ class AcessoExternoController extends Controller
 	{
 		$acesso = AcessoExterno::findOrFail($id);
 
-		// mesma lista de bancos pra manter padrão
-		$bancos = Banco::orderBy('nome')->pluck('nome', 'nome');
+		// Lista de bancos / sistemas para o select
+		// Aqui eu estou pegando os nomes que já existem na tabela,
+		// mas se você tiver uma lista fixa em outro lugar, pode usar ela.
+		$bancos = AcessoExterno::query()
+			->orderBy('nome')
+			->pluck('nome', 'nome'); // ['Banco BMG' => 'Banco BMG']
 
-		return view('acessos-externos.edit', compact('acesso', 'bancos'));
+		return view('acessos-externos.edit', [
+			'acesso' => $acesso,
+			'bancos' => $bancos,
+			'activePage' => 'acessos-externos',
+		]);
 	}
+
 
 	public function store(Request $request)
 	{

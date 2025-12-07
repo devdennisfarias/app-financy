@@ -1,4 +1,7 @@
-@extends('layouts.app', ['activePage' => 'esteira', 'titlePage' => __('Editar de Propostas')])
+@extends('layouts.app', [
+    'activePage' => request('from') === 'esteira' ? 'esteira' : 'propostas',
+    'titlePage' => __('Editar Propostas'),
+])
 
 @section('content')
     <div class="content">
@@ -12,6 +15,14 @@
             </div>
         @endif
 
+        @if (session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
 
         <div class="container-fluid">
             <div class="row">
@@ -25,30 +36,32 @@
                                 <div class="col-md-12">
 
                                     <form name="cadastro_proposta" method="post"
-                                          action="{{ route('propostas.update', $proposta->id) }}" class="form-horizontal"
-                                          enctype="multipart/form-data">
+                                        action="{{ route('propostas.update', ['proposta' => $proposta->id, 'from' => request('from')]) }}"
+                                        class="form-horizontal" enctype="multipart/form-data">
                                         @method('PUT')
                                         @csrf
+
                                         <div class="row">
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Número Financycred</label>
-                                                    <input readonly="readonly" type="text" class="form-control" name="numero_nexus"
-                                                           value="{{ $proposta->id }}">
+                                                    <input readonly="readonly" type="text" class="form-control"
+                                                        name="numero_nexus" value="{{ $proposta->id }}">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">CPF Cliente</label>
-                                                    <input readonly="readonly" id="cpf" type="text" class="form-control"
-                                                           name="cpf" value="{{ $proposta->cliente->cpf }}">
+                                                    <input readonly="readonly" id="cpf" type="text"
+                                                        class="form-control" name="cpf"
+                                                        value="{{ $proposta->cliente->cpf }}">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Vendedor</label>
-                                                    <input readonly="readonly" type="text" class="form-control" name="vendedor"
-                                                           value="{{ $proposta->vendedor->name }}">
+                                                    <input readonly="readonly" type="text" class="form-control"
+                                                        name="vendedor" value="{{ $proposta->vendedor->name }}">
                                                 </div>
                                             </div>
                                         </div>
@@ -57,22 +70,23 @@
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Orgão</label>
-                                                    <input readonly="readonly" id="orgao" type="text" class="form-control"
-                                                           name="orgao" value="{{ $proposta->cliente->orgao_1 }}">
+                                                    <input readonly="readonly" id="orgao" type="text"
+                                                        class="form-control" name="orgao"
+                                                        value="{{ $proposta->cliente->orgao_1 }}">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Tabela Digitada</label>
                                                     <input type="text" class="form-control" name="tabela_digitada"
-                                                           value="{{ $proposta->tabela_digitada }}">
+                                                        value="{{ $proposta->tabela_digitada }}">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Vigência da Tabela</label>
                                                     <input type="text" class="form-control" name="vigencia_tabela"
-                                                           value="{{ $proposta->vigencia_tabela }}">
+                                                        value="{{ $proposta->vigencia_tabela }}">
                                                 </div>
                                             </div>
                                         </div>
@@ -81,23 +95,23 @@
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Banco</label>
-                                                    <input id="banco" type="text" class="form-control"
-                                                           name="banco" value="{{ $proposta->banco }}">
+                                                    <input id="banco" type="text" class="form-control" name="banco"
+                                                        value="{{ $proposta->banco }}">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Valor Bruto</label>
                                                     <input id="valor_bruto" type="text" class="form-control"
-                                                           name="valor_bruto" value="{{ $proposta->valor_bruto }}">
+                                                        name="valor_bruto" value="{{ $proposta->valor_bruto }}">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Valor Líquido Liberado</label>
                                                     <input id="valor_liquido_liberado" type="text" class="form-control"
-                                                           name="valor_liquido_liberado"
-                                                           value="{{ $proposta->valor_liquido_liberado }}">
+                                                        name="valor_liquido_liberado"
+                                                        value="{{ $proposta->valor_liquido_liberado }}">
                                                 </div>
                                             </div>
                                         </div>
@@ -107,21 +121,39 @@
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Tx de Júros</label>
                                                     <input type="text" class="form-control" name="tx_juros"
-                                                           value="{{ $proposta->tx_juros }}">
+                                                        value="{{ $proposta->tx_juros }}">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Valor da Parcela</label>
                                                     <input id="valor_parcela" type="text" class="form-control"
-                                                           name="valor_parcela" value="{{ $proposta->valor_parcela }}">
+                                                        name="valor_parcela" value="{{ $proposta->valor_parcela }}">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Qtd Parcelas</label>
                                                     <input type="number" class="form-control" name="qtd_parcelas"
-                                                           value="{{ $proposta->qtd_parcelas }}">
+                                                        value="{{ $proposta->qtd_parcelas }}">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- STATUS ATUAL DA PROPOSTA (único status, vindo da tabela status) --}}
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="bmd-label-floating">Status da Proposta</label>
+                                                    <select name="status_atual_id" class="form-control">
+                                                        <option value="">Selecione...</option>
+                                                        @foreach ($statusList as $status)
+                                                            <option value="{{ $status->id }}"
+                                                                {{ $proposta->status_atual_id == $status->id ? 'selected' : '' }}>
+                                                                {{ $status->status }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
                                                 </div>
                                             </div>
                                         </div>
@@ -130,29 +162,31 @@
                                             <div class="col-md-3">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Espécie Benefício</label>
-                                                    <input readonly="readonly" type="text" class="form-control" name="especie_beneficio_1"
-                                                           value="{{ $proposta->cliente->especie_beneficio_1 }}">
+                                                    <input readonly="readonly" type="text" class="form-control"
+                                                        name="especie_beneficio_1"
+                                                        value="{{ $proposta->cliente->especie_beneficio_1 }}">
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Salário</label>
                                                     <input readonly="readonly" type="text" class="form-control"
-                                                           name="salario_1" value="{{ $proposta->cliente->salario_1 }}">
+                                                        name="salario_1" value="{{ $proposta->cliente->salario_1 }}">
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Espécie Benefício 2</label>
-                                                    <input readonly="readonly" type="text" class="form-control" name="especie_beneficio_2"
-                                                           value="{{ $proposta->cliente->especie_beneficio_2 }}">
+                                                    <input readonly="readonly" type="text" class="form-control"
+                                                        name="especie_beneficio_2"
+                                                        value="{{ $proposta->cliente->especie_beneficio_2 }}">
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">Salário 2</label>
-                                                    <input readonly="readonly" type="text" class="form-control" name="salario_2"
-                                                           value="{{ $proposta->cliente->salario_2 }}">
+                                                    <input readonly="readonly" type="text" class="form-control"
+                                                        name="salario_2" value="{{ $proposta->cliente->salario_2 }}">
                                                 </div>
                                             </div>
                                         </div>
@@ -164,19 +198,20 @@
                                                         <i class="material-icons">books</i>
                                                         <span>Selecionar documentos</span>
                                                     </label>
-                                                    <input id="file" style="display:none" type="file" name="documentos[]" multiple>
+                                                    <input id="file" style="display:none" type="file"
+                                                        name="documentos[]" multiple>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <div class="row">
                                             <div class="col-md-12 text-right">
                                                 <div class="form-group">
-                                                    <button type="submit" class="btn btn-fill btn-success">Atualizar</button>
+                                                    <button type="submit"
+                                                        class="btn btn-fill btn-success">Atualizar</button>
                                                 </div>
                                             </div>
                                         </div>
-                                        <!--<div class="card-footer ">                                           
-                                                </div>-->
                                     </form>
 
                                     <div class="table-responsive">
@@ -193,22 +228,24 @@
                                                         <td>
                                                             @if ($documento->extencao != 'pdf')
                                                                 <img width="300"
-                                                                     src="{{ asset('storage') }}/public/{{ $documento->path }}"
-                                                                     alt="">
+                                                                    src="{{ asset('storage') }}/public/{{ $documento->path }}"
+                                                                    alt="">
                                                             @else
-                                                                <a target="_blank" href="{{ asset('storage') }}/public/{{ $documento->path }}"><span>{{ $documento->path }}</span></a>
+                                                                <a target="_blank"
+                                                                    href="{{ asset('storage') }}/public/{{ $documento->path }}">
+                                                                    <span>{{ $documento->path }}</span>
+                                                                </a>
                                                             @endif
-
                                                         </td>
                                                         <td class="td-actions text-right">
                                                             <form class="d-inline"
-                                                                  action="{{ route('proposta.deletar-doc', $documento->id) }}"
-                                                                  method="POST"
-                                                                  onsubmit="return confirm('Tem certeza que deseja excluir?')">
+                                                                action="{{ route('proposta.deletar-doc', $documento->id) }}"
+                                                                method="POST"
+                                                                onsubmit="return confirm('Tem certeza que deseja excluir?')">
                                                                 @method('DELETE')
                                                                 @csrf
                                                                 <button type="submit" rel="tooltip"
-                                                                        class="btn btn-danger">
+                                                                    class="btn btn-danger">
                                                                     <i class="material-icons">close</i>
                                                                 </button>
                                                             </form>
@@ -226,9 +263,6 @@
                 </div><!-- fim col-12 -->
             </div><!-- fim row -->
 
-
-
-
             @can('atendimentos.create')
                 <div class="row">
                     <div class="col-md-12">
@@ -240,8 +274,8 @@
                                 <div class="row">
                                     <div class="col-md-12">
                                         <form name="cadastro_atendimento" method="post"
-                                              action="{{ route('atendimentos.store', $proposta->id) }}" class="form-horizontal"
-                                              enctype="multipart/form-data">
+                                            action="{{ route('atendimentos.store', $proposta->id) }}" class="form-horizontal"
+                                            enctype="multipart/form-data">
                                             @csrf
                                             <div class="row">
                                                 <div class="col-md-8">
@@ -254,7 +288,8 @@
                                                         <select id="inputState" class="form-control" name="status_id">
                                                             <option value="">Status</option>
                                                             @foreach ($statuss as $status)
-                                                                <option value="{{ $status->id }}">{{ $status->status }}</option>
+                                                                <option value="{{ $status->id }}">{{ $status->status }}
+                                                                </option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -271,9 +306,6 @@
                     </div><!-- fim col-12 -->
                 </div><!-- fim row -->
             @endcan
-
-
-
 
             <div class="row">
                 <div class="col-md-12">
@@ -295,28 +327,29 @@
                                             </thead>
                                             <tbody>
                                                 @foreach ($atendimentos as $atendimento)
-
                                                     <tr>
                                                         <td>{{ $atendimento->id }}</td>
                                                         <td>{{ $atendimento->descricao }}</td>
                                                         <td>
                                                             <!-- Button trigger modal -->
-                                                            <button type="button" rel="tooltip" class="btn btn-info btn-sm"
-                                                                    data-toggle="modal" data-target="#id{{ $atendimento->id }}">
+                                                            <button type="button" rel="tooltip"
+                                                                class="btn btn-info btn-sm" data-toggle="modal"
+                                                                data-target="#id{{ $atendimento->id }}">
                                                                 <i class="material-icons">remove_red_eye</i>
                                                             </button>
                                                             <!-- Modal -->
-                                                            <div class="modal fade" id="id{{ $atendimento->id }}" tabindex="-1"
-                                                                 role="dialog" aria-labelledby="exampleModalLabel"
-                                                                 aria-hidden="true">
+                                                            <div class="modal fade" id="id{{ $atendimento->id }}"
+                                                                tabindex="-1" role="dialog"
+                                                                aria-labelledby="exampleModalLabel" aria-hidden="true">
                                                                 <div class="modal-dialog" role="document">
                                                                     <div class="modal-content">
                                                                         <div class="modal-header">
-                                                                            <h5 class="modal-title" id="exampleModalLabel">
+                                                                            <h5 class="modal-title"
+                                                                                id="exampleModalLabel">
                                                                                 <strong>{{ $atendimento->id }}</strong>
                                                                             </h5>
                                                                             <button type="button" class="close"
-                                                                                    data-dismiss="modal" aria-label="Close">
+                                                                                data-dismiss="modal" aria-label="Close">
                                                                                 <span aria-hidden="true">&times;</span>
                                                                             </button>
                                                                         </div>
@@ -326,14 +359,13 @@
                                                                         </div>
                                                                         <div class="modal-footer">
                                                                             <button type="button" class="btn btn-danger"
-                                                                                    data-dismiss="modal">Fechar</button>
+                                                                                data-dismiss="modal">Fechar</button>
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </td>
                                                     </tr>
-
                                                 @endforeach
                                             </tbody>
                                         </table>
@@ -345,7 +377,6 @@
                 </div><!-- fim col-12 -->
             </div><!-- fim row -->
 
-
         </div><!-- fim container-fluid -->
     </div><!-- Fim content -->
 
@@ -355,7 +386,7 @@
     <script>
         $(document).ready(function() {
             $("#cpf").blur(function() {
-                data = $("#cpf").val();
+                let data = $("#cpf").val();
                 $.get("{{ route('propostas.consulta-cpf') }}", {
                     cpf: data
                 }, function(data, status) {
@@ -367,6 +398,6 @@
                     }
                 });
             });
-        })
+        });
     </script>
 @endsection

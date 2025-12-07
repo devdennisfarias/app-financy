@@ -8,17 +8,28 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Cliente extends Model
 {
-    use SoftDeletes;
-    use HasFactory;
+	use SoftDeletes;
+	use HasFactory;
 
-    protected $table = 'clientes';
+	protected $table = 'clientes';
 
-    public function vendedor(){   
-        return $this->belongsTo(User::class, 'user_id', 'id');
-    }
+	public function vendedor()
+	{
+		return $this->belongsTo(User::class, 'user_id', 'id');
+	}
 
-    public function propostas(){
-        return $this->hasMany(Proposta::class, 'cliente_id', 'id');
-    }
+	public function propostas()
+	{
+		return $this->hasMany(Proposta::class, 'cliente_id', 'id');
+	}
+	public function convenio()
+	{
+		return $this->belongsTo(Convenio::class, 'convenio_id');
+	}
+	public function orgao()
+	{
+		return $this->belongsTo(Orgao::class);
+	}
+
 
 }

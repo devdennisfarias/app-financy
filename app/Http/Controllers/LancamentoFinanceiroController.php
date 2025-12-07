@@ -8,6 +8,8 @@ use App\Models\Cliente;              // <-- AJUSTE AQUI
 use App\Models\LancamentoFinanceiro;
 use App\Models\ContaBancaria;
 use Illuminate\Http\Request;
+use App\Http\Requests\StoreLancamentoFinanceiroRequest;
+use App\Http\Requests\UpdateLancamentoFinanceiroRequest;
 
 class LancamentoFinanceiroController extends Controller
 {
@@ -46,25 +48,13 @@ class LancamentoFinanceiroController extends Controller
 		return view('financeiro.lancamentos.index', compact('lancamentos'));
 	}
 
-
 	/**
 	 * Armazena novo lançamento.
 	 */
-	public function store(Request $request)
+	public function store(StoreLancamentoFinanceiroRequest $request)
 	{
-		$dados = $request->validate([
-			'tipo' => 'required|in:receita,despesa',
-			'natureza' => 'required|in:pagar,receber',
-			'conta_bancaria_id' => 'nullable|exists:contas_bancarias,id',
-			'descricao' => 'required|string|max:255',
-			'categoria' => 'nullable|string|max:255',
-			'data_competencia' => 'nullable|date',
-			'data_vencimento' => 'nullable|date',
-			'data_pagamento' => 'nullable|date',
-			'valor_previsto' => 'required|numeric',
-			'valor_pago' => 'nullable|numeric',
-			'status' => 'required|in:aberto,pago,atrasado,cancelado',
-		]);
+		// Dados já validados pelo Form Request
+		$dados = $request->validated();
 
 		$dados['user_id'] = auth()->id();
 
@@ -89,8 +79,23 @@ class LancamentoFinanceiroController extends Controller
 	/**
 	 * Atualiza lançamento.
 	 */
-	// use Illuminate\Http\Request;  (já está no topo)
+	public function update(UpdateLancamentoFinanceiroRequest $request, $id)
+	{
+		$lancamento = LancamentoFinanceiro::findOrFail($id);
 
+		// Dados já validados pelo Form Request
+		$dados = $request->validated();
+
+		$lancamento->update($dados);
+
+		return redirect()
+			->route('lancamentos.edit', $lancamento->id)
+			->withSuccess('Lançamento financeiro atualizado com sucesso.');
+	}
+
+	/**
+	 * Formulário de criação.
+	 */
 	public function create(Request $request)
 	{
 		$contas = ContaBancaria::orderBy('nome')->get();
@@ -107,7 +112,6 @@ class LancamentoFinanceiroController extends Controller
 			'tipoDefault'
 		));
 	}
-
 
 	/**
 	 * Remove lançamento.
@@ -164,8 +168,6 @@ class LancamentoFinanceiroController extends Controller
 		return view('financeiro.contas_pagar', compact('lancamentos', 'fornecedores', 'filtros'));
 	}
 
-
-
 	public function contasReceber(Request $request)
 	{
 		$query = LancamentoFinanceiro::where('natureza', 'receber')
@@ -204,7 +206,6 @@ class LancamentoFinanceiroController extends Controller
 
 		return view('financeiro.contas_receber', compact('lancamentos', 'clientes', 'filtros'));
 	}
-
 
 	public function receitas(Request $request)
 	{
@@ -308,7 +309,5 @@ class LancamentoFinanceiroController extends Controller
 			'filtros' => $request->only(['conta_bancaria_id', 'data_inicio', 'data_fim']),
 		]);
 	}
-
-
 
 }
