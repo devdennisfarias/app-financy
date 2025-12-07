@@ -46,7 +46,7 @@
                                     <td>{{ $cliente->id }}</td>
                                     <td>{{ $cliente->nome }}</td>
                                     <td>{{ $cliente->cpf }}</td>
-                                    <td>{{ $cliente->telefone ?? ($cliente->celular ?? '-') }}</td>
+                                    <td>{{ $cliente->telefone ?? ($cliente->telefone_1 ?? '-') }}</td>
                                     <td>{{ $cliente->cidade ?? '-' }}</td>
 
                                     <td class="td-actions text-right">

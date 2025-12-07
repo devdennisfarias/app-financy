@@ -9,10 +9,6 @@
 
             {{-- Cabeçalho da página --}}
             <x-page-header title="Esteira de Propostas">
-                {{-- Se quiser algum botão aqui depois, é só colocar --}}
-                {{-- <a href="{{ route('propostas.index') }}" class="btn btn-primary btn-sm">
-                    <i class="material-icons">list</i> Ver todas as propostas
-                </a> --}}
             </x-page-header>
 
             {{-- Alertas de sessão --}}
@@ -59,7 +55,7 @@
 
                         {{-- Produto --}}
                         <div class="col-md-3">
-                            <div class="input-group input-group-static mb-4">
+                            <div class="input-group input-group-static mb-3">
                                 <label for="produto" class="ms-0">Produto</label>
                                 <select class="form-control" id="produto" name="produto">
                                     <option value="">Todos</option>
@@ -103,7 +99,21 @@
                             </div>
                         </div>
 
-                        {{-- (Futuro) Se quiser um filtro por status_atual_id, dá pra incluir aqui --}}
+                        {{-- Status Atual --}}
+                        <div class="col-md-3">
+                            <div class="input-group input-group-static mb-3">
+                                <label for="status_atual_id" class="ms-0">Status</label>
+                                <select name="status_atual_id" id="status_atual_id" class="form-control">
+                                    <option value="">Todos</option>
+                                    @foreach ($statusList as $status)
+                                        <option value="{{ $status->id }}"
+                                            {{ ($filtros['status_atual_id'] ?? '') == $status->id ? 'selected' : '' }}>
+                                            {{ $status->status }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Botões --}}
@@ -162,10 +172,10 @@
                 </div>
             </div>
 
-            {{-- TABELA ESTILO PLANILHA (apenas um status vindo do relacionamento) --}}
+            {{-- TABELA DA ESTEIRA --}}
             <x-card title="Lista da Esteira">
                 <x-slot name="header">
-                    <p class="card-category">Visão detalhada de todas as propostas em andamento</p>
+                    <p class="card-category">Visão detalhada das propostas em andamento</p>
                 </x-slot>
 
                 <x-table :striped="true">
@@ -175,9 +185,10 @@
                             <th>Data</th>
                             <th>Cliente</th>
                             <th>CPF</th>
+                            <th>Convênio</th>
+                            <th>Órgão Pagador</th>
                             <th>Produto</th>
                             <th>Banco</th>
-                            <th>Órgão</th>
                             <th>Tabela</th>
                             <th>Valor Líquido</th>
                             <th>Parcela</th>
@@ -195,9 +206,19 @@
                             <td>{{ $p->created_at ? $p->created_at->format('d/m/Y') : '' }}</td>
                             <td>{{ optional($p->cliente)->nome }}</td>
                             <td>{{ optional($p->cliente)->cpf }}</td>
+
+                            {{-- Convênio (via órgão do cliente) --}}
+                            <td>
+                                {{ optional(optional(optional($p->cliente)->orgao)->convenio)->nome ?? '-' }}
+                            </td>
+
+                            {{-- Órgão pagador --}}
+                            <td>
+                                {{ optional(optional($p->cliente)->orgao)->nome ?? '-' }}
+                            </td>
+
                             <td>{{ optional($p->produto)->nome ?? optional($p->produto)->produto }}</td>
                             <td>{{ $p->banco }}</td>
-                            <td>{{ $p->orgao }}</td>
                             <td>{{ $p->tabela_digitada }}</td>
 
                             <td>
@@ -214,32 +235,48 @@
 
                             <td>{{ $p->qtd_parcelas }}</td>
 
-                            {{-- ÚNICO STATUS: vindo da relação status_atual --}}
-                            <td>{{ optional($p->status_atual)->status ?? '-' }}</td>
+                            {{-- Status atual (nome, não id) --}}
+                            <td>
+                                @php
+                                    $statusNome = optional($p->status_atual)->status;
+                                @endphp
+
+                                @if ($statusNome)
+                                    <span
+                                        class="badge
+                                        @if (str_starts_with($statusNome, 'Aprov')) badge-success
+                                        @elseif (str_starts_with($statusNome, 'Pendente')) badge-warning
+                                        @elseif (str_starts_with($statusNome, 'Cancel')) badge-danger
+                                        @else badge-secondary @endif
+                                    ">
+                                        {{ $statusNome }}
+                                    </span>
+                                @else
+                                    -
+                                @endif
+                            </td>
 
                             <td>{{ optional($p->user)->name }}</td>
                             <td>{{ \Illuminate\Support\Str::limit($p->observacao ?? '', 40) }}</td>
 
                             <td class="td-actions text-right">
-                                {{-- Editar proposta e, ao salvar, voltar para a esteira --}}
-                                <a href="{{ route('propostas.edit', ['proposta' => $p->id, 'from' => 'esteira']) }}"
-                                    class="btn btn-info btn-sm" title="Editar Proposta">
+                                <a href="{{ route('propostas.edit', $p->id) }}" class="btn btn-info btn-sm"
+                                    title="Editar Proposta">
                                     <i class="material-icons">edit</i>
                                 </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="15">Nenhuma proposta encontrada para os filtros informados.</td>
+                            <td colspan="16">Nenhuma proposta encontrada para os filtros informados.</td>
                         </tr>
                     @endforelse
                 </x-table>
 
-                {{-- paginação --}}
+                {{-- Paginação --}}
                 <x-slot name="footerSlot">
                     {{ $propostas->appends($filtros ?? [])->links() }}
                 </x-slot>
-
             </x-card>
 
         </div>

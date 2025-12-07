@@ -1,323 +1,237 @@
-@extends('layouts.app', ['activePage' => 'clientes', 'titlePage' => __('Editar de Clientes')])
+@extends('layouts.app', [
+    'activePage' => 'clientes',
+    'titlePage' => __('Editar Cliente'),
+])
 
 @section('content')
     <div class="content">
-
-        @if (session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <strong>Confirmação!</strong> {{ session('success') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <strong>Ocorreu um Erro!</strong>
-                <br><br>
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-
-
         <div class="container-fluid">
-            <div class="row">
-                <div class="col-12 text-right">
-                    <a href="{{ url()->previous() }}" class="btn btn-sm btn"><i class="material-icons">reply</i></a>
+
+            {{-- Cabeçalho --}}
+            <x-page-header title="Editar Cliente">
+                <a href="{{ route('clientes.index') }}" class="btn btn-default btn-sm">
+                    <i class="material-icons">arrow_back</i> Voltar
+                </a>
+            </x-page-header>
+
+            {{-- Alertas --}}
+            <x-session-alerts class="mb-3" />
+
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <i class="material-icons">close</i>
+                    </button>
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
-            </div>
+            @endif
+
+            {{-- CARD PRINCIPAL --}}
             <div class="row">
                 <div class="col-md-12">
                     <div class="card">
-                        <form id="form_clientes" method="post" action="{{ route('clientes.update', $cliente->id) }}" class="form-horizontal">
-                            @method('PUT')
-                            @csrf
-                            <div class="card-header card-header-primary">
-                                <h4 class="card-title ">Formulário de Cadastro</h4>
-                            </div>
-                            <div class="card-body">
+
+                        <div class="card-header card-header-primary">
+                            <h4 class="card-title">Dados do Cliente</h4>
+                            <p class="card-category">Atualize os dados cadastrais do cliente</p>
+                        </div>
+
+                        <div class="card-body">
+                            <form method="POST" action="{{ route('clientes.update', $cliente->id) }}" autocomplete="off">
+                                @csrf
+                                @method('PUT')
+
+                                {{-- DADOS BÁSICOS --}}
                                 <div class="row">
-                                    <div class="col-md-12">
+                                    <div class="col-md-6">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="nome" class="ms-0">
+                                                Nome <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" name="nome" id="nome" class="form-control"
+                                                value="{{ old('nome', $cliente->nome) }}" required>
+                                        </div>
+                                    </div>
 
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Nome*</label>
-                                                    <input id="nome" type="text" class="form-control" name="nome" value="{{ $cliente->nome }}">
-                                                </div>
-                                            </div>
+                                    <div class="col-md-3">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="cpf" class="ms-0">
+                                                CPF <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" name="cpf" id="cpf" class="form-control"
+                                                value="{{ old('cpf', $cliente->cpf) }}" required>
                                         </div>
+                                    </div>
 
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">CPF*</label>
-                                                    <input id="cpf" type="text" class="form-control" name="cpf" value="{{ $cliente->cpf }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <div class="input-group date" data-provide="datepicker">
-                                                        <label>Nascimento:* &nbsp; </label>
-                                                        <input id="data_nascimento" type="date" class="form-control datepicker" name="data_nascimento" value="{{ $cliente->data_nascimento }}">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-2">
-                                                <div class="togglebutton">
-                                                    <input id="alfabetizado" name="alfabetizado" type="checkbox" value="1" {{ $cliente->alfabetizado == 1 ? 'checked' : '' }}>
-                                                    <span class="toggle"></span>
-                                                    <label>
-                                                        Alfabetizado
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-2">
-                                                <div class="togglebutton">
-                                                    <input id="figura_publica" name="figura_publica" type="checkbox" value="1" {{ $cliente->figura_publica == 1 ? 'checked' : '' }}>
-                                                    <span class="toggle"></span>
-                                                    <label>
-                                                        Figura Pública
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">RG</label>
-                                                    <input id="rg" type="text" class="form-control" name="rg" value="{{ $cliente->rg }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <div class="input-group date" data-provide="datepicker">
-                                                        <label>Expedição: &nbsp; </label>
-                                                        <input id="data_exp" type="date" class="form-control" name="data_exp" value="{{ $cliente->data_exp }}">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class=" col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Orgão Emissor</label>
-                                                    <input id="orgao_emissor" type="text" class="form-control" name="orgao_emissor" value="{{ $cliente->orgao_emissor }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Nome do Pai</label>
-                                                    <input id="nome_pai" type="text" class="form-control" name="nome_pai" value="{{ $cliente->nome_pai }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Nome da Mãe*</label>
-                                                    <input id="nome_mae" type="text" class="form-control" name="nome_mae" value="{{ $cliente->nome_mae }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-8">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Endereço</label>
-                                                    <input id="endereco" type="text" class="form-control" name="endereco" value="{{ $cliente->endereco }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-1">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Número</label>
-                                                    <input id="numero" type="text" class="form-control" name="numero" value="{{ $cliente->numero }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Complemento</label>
-                                                    <input id="complemento" type="text" class="form-control" name="complemento" value="{{ $cliente->complemento }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Naturalidade</label>
-                                                    <input id="naturalidade" type="text" class="form-control" name="naturalidade" value="{{ $cliente->naturalidade }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Nacionalidade</label>
-                                                    <input id="nacionalidade" type="text" class="form-control" name="nacionalidade" value="{{ $cliente->nacionalidade }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Estado Civil</label>
-                                                    <input id="estado_civil" type="text" class="form-control" name="estado_civil" value="{{ $cliente->estado_civil }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Orgão</label>
-                                                    <input id="orgao_1" type="text" class="form-control" name="orgao_1" value="{{ $cliente->orgao_1 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Matrícula</label>
-                                                    <input id="matricula_1" type="text" class="form-control" name="matricula_1" value="{{ $cliente->matricula_1 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Especie Beneficio</label>
-                                                    <input id="especie_beneficio_1" type="text" class="form-control" name="especie_beneficio_1" value="{{ $cliente->especie_beneficio_1 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Salário</label>
-                                                    <input id="salario_1" type="text" class="form-control" name="salario_1" value="{{ $cliente->salario_1 }}">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Banco</label>
-                                                    <input id="banco_conta_1" type="text" class="form-control" name="banco_conta_1" value="{{ $cliente->banco_conta_1 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Agência</label>
-                                                    <input id="agencia_conta_1" type="text" class="form-control" name="agencia_conta_1" value="{{ $cliente->agencia_conta_1 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Número da Conta</label>
-                                                    <input id="conta_bancaria_1" type="text" class="form-control" name="conta_bancaria_1" value="{{ $cliente->conta_bancaria_1 }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Orgão 2</label>
-                                                    <input id="orgao_2" type="text" class="form-control" name="orgao_2" value="{{ $cliente->orgao_2 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Matrícula 2</label>
-                                                    <input id="matricula_2" type="text" class="form-control" name="matricula_2" value="{{ $cliente->matricula_2 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Especie Beneficio 2</label>
-                                                    <input id="especie_beneficio_2" type="text" class="form-control" name="especie_beneficio_2" value="{{ $cliente->especie_beneficio_2 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Salário 2</label>
-                                                    <input id="salario_2" type="text" class="form-control" name="salario_2" value="{{ $cliente->salario_2 }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class=" row">
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Banco 2</label>
-                                                    <input id="banco_conta_2" type="text" class="form-control" name="banco_conta_2" value="{{ $cliente->banco_conta_2 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Agência 2</label>
-                                                    <input id="agencia_conta_2" type="text" class="form-control" name="agencia_conta_2" value="{{ $cliente->agencia_conta_2 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Número da Conta 2</label>
-                                                    <input id="conta_bancaria_2" type="text" class="form-control" name="conta_bancaria_2" value="{{ $cliente->conta_bancaria_2 }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Telefone 1*</label>
-                                                    <input id="telefone_1" type="text" class="form-control" name="telefone_1" value="{{ $cliente->telefone_1 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Telefone 2</label>
-                                                    <input id="telefone_2" type="text" class="form-control" name="telefone_2" value="{{ $cliente->telefone_2 }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Telefone 3</label>
-                                                    <input id="telefone_3" type="text" class="form-control" name="telefone_3" value="{{ $cliente->telefone_3 }}">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-12 text-right">
-                                                <div class="form-group">
-                                                    <button type="submit" class="btn btn-fill btn-success">Atualizar</button>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-12 text-left">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Atualizado em: {{ date('d/m/y - H:m', strtotime($cliente->updated_at)) }}</label>
-                                                </div>
-                                            </div>
+                                    <div class="col-md-3">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="data_nascimento" class="ms-0">
+                                                Data de Nascimento <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="date" name="data_nascimento" id="data_nascimento"
+                                                class="form-control"
+                                                value="{{ old('data_nascimento', optional($cliente->data_nascimento)->format('Y-m-d')) }}"
+                                                required>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <!--fim card-body-->
 
-                            <!--<div class="card-footer">
-                                
-                            </div>-->
-                        </form>
-                    </div>
-                    <!--fim card-->
-                </div>
-            </div>
+                                {{-- DOCUMENTOS / FILIAÇÃO --}}
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="rg" class="ms-0">RG</label>
+                                            <input type="text" name="rg" id="rg" class="form-control"
+                                                value="{{ old('rg', $cliente->rg) }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="orgao_emissor" class="ms-0">Órgão Emissor</label>
+                                            <input type="text" name="orgao_emissor" id="orgao_emissor"
+                                                class="form-control"
+                                                value="{{ old('orgao_emissor', $cliente->orgao_emissor) }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="nome_mae" class="ms-0">
+                                                Nome da Mãe <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" name="nome_mae" id="nome_mae" class="form-control"
+                                                value="{{ old('nome_mae', $cliente->nome_mae) }}" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="nome_pai" class="ms-0">Nome do Pai</label>
+                                            <input type="text" name="nome_pai" id="nome_pai" class="form-control"
+                                                value="{{ old('nome_pai', $cliente->nome_pai) }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- CONTATO --}}
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="telefone_1" class="ms-0">
+                                                Telefone 1 <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" name="telefone_1" id="telefone_1" class="form-control"
+                                                value="{{ old('telefone_1', $cliente->telefone_1) }}" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="telefone_2" class="ms-0">Telefone 2</label>
+                                            <input type="text" name="telefone_2" id="telefone_2" class="form-control"
+                                                value="{{ old('telefone_2', $cliente->telefone_2) }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="telefone_3" class="ms-0">Telefone 3</label>
+                                            <input type="text" name="telefone_3" id="telefone_3" class="form-control"
+                                                value="{{ old('telefone_3', $cliente->telefone_3) }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="email" class="ms-0">E-mail</label>
+                                            <input type="email" name="email" id="email" class="form-control"
+                                                value="{{ old('email', $cliente->email) }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- ENDEREÇO (COMPONENTE CEP + UF) --}}
+                                <x-cep-autocomplete :cep="$cliente->cep" :endereco="$cliente->endereco" :numero="$cliente->numero" :complemento="$cliente->complemento"
+                                    :bairro="$cliente->bairro" :cidade="$cliente->cidade" :estado="$cliente->estado" />
+
+                                {{-- PERFIL / SITUAÇÃO --}}
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="estado_civil" class="ms-0">Estado Civil</label>
+                                            <input type="text" name="estado_civil" id="estado_civil"
+                                                class="form-control"
+                                                value="{{ old('estado_civil', $cliente->estado_civil) }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="input-group input-group-static mb-3">
+                                            <label for="nacionalidade" class="ms-0">
+                                                Naturalidade / Nacionalidade
+                                            </label>
+                                            <input type="text" name="nacionalidade" id="nacionalidade"
+                                                class="form-control"
+                                                value="{{ old('nacionalidade', $cliente->nacionalidade) }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- CONVÊNIO + ÓRGÃO PAGADOR (COMPONENTE) --}}
+                                <x-convenio-orgao-select :convenios="$convenios" :orgaos="$orgaos" :selectedConvenio="$cliente->orgao->convenio_id ?? null"
+                                    :selectedOrgao="old('orgao_id', $cliente->orgao_id)" />
+
+                                {{-- FLAGS --}}
+                                <div class="row mt-2">
+                                    <div class="col-md-3">
+                                        <div class="form-check mt-2">
+                                            <label class="form-check-label">
+                                                <input class="form-check-input" type="checkbox" name="alfabetizado"
+                                                    value="1"
+                                                    {{ old('alfabetizado', $cliente->alfabetizado) ? 'checked' : '' }}>
+                                                Alfabetizado
+                                                <span class="form-check-sign">
+                                                    <span class="check"></span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="form-check mt-2">
+                                            <label class="form-check-label">
+                                                <input class="form-check-input" type="checkbox" name="figura_publica"
+                                                    value="1"
+                                                    {{ old('figura_publica', $cliente->figura_publica) ? 'checked' : '' }}>
+                                                Figura Pública / PEP
+                                                <span class="form-check-sign">
+                                                    <span class="check"></span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- BOTÃO SALVAR --}}
+                                <div class="row mt-4">
+                                    <div class="col-md-12 text-right">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="material-icons">save</i> Salvar
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </form>
+                        </div> {{-- card-body --}}
+                    </div> {{-- card --}}
+                </div> {{-- col --}}
+            </div> {{-- row --}}
+
         </div>
-        <!--container-fluid-->
     </div>
-    <!--content-->
-@endsection
-@section('post-script')
 @endsection

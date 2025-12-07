@@ -25,8 +25,13 @@ class CreateClientesTable extends Migration
 			$table->boolean('figura_publica')->nullable();
 			$table->string('nome_pai')->nullable();
 			$table->string('nome_mae');
+			$table->string('email')->nullable();
+			$table->string('cep')->nullable();
 			$table->string('endereco')->nullable();
 			$table->string('numero')->nullable();
+			$table->string('bairro')->nullable();
+			$table->string('cidade')->nullable();
+			$table->string('estado')->nullable();
 			$table->string('complemento')->nullable();
 			$table->string('nacionalidade')->nullable();
 			$table->string('naturalidade')->nullable();

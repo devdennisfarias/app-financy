@@ -2,166 +2,172 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreUpdateClienteRequest;
 use App\Models\Cliente;
 use App\Models\Orgao;
+use App\Models\Convenio;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Ui\Presets\React;
-
 use Illuminate\Support\Facades\Validator;
 
 class ClienteController extends Controller
 {
-
 	public function __construct()
 	{
 		$this->middleware('can:clientes.index')->only('index');
-		$this->middleware('can:clientes.create')->only('create', 'store');
-		$this->middleware('can:clientes.edit')->only('edit', 'update');
+		$this->middleware('can:clientes.create')->only(['create', 'store']);
+		$this->middleware('can:clientes.edit')->only(['edit', 'update']);
 		$this->middleware('can:clientes.destroy')->only('destroy');
 	}
 
+	/**
+	 * Lista de clientes (pode ser controlada por Livewire)
+	 */
 	public function index()
 	{
 		return view('clientes.index');
 	}
 
+	/**
+	 * Carteira (seu layout já usa essa view)
+	 */
 	public function carteira()
 	{
 		return view('clientes.carteira');
 	}
 
+	/**
+	 * Formulário de criação
+	 */
 	public function create()
 	{
-		$orgaos = Orgao::with('convenio')->where('ativo', true)->orderBy('nome')->get();
+		$convenios = Convenio::orderBy('nome')->get();
+		$orgaos = Orgao::with('convenio')
+			->where('ativo', true)
+			->orderBy('nome')
+			->get();
 
-		return view('clientes.create');
+		return view('clientes.create', [
+			'convenios' => $convenios,
+			'orgaos' => $orgaos,
+		]);
 	}
 
+	/**
+	 * Salva novo cliente
+	 */
 	public function store(Request $request)
 	{
-		$cliente = new Cliente;
 		$dados = $request->all();
 		$loggedId = Auth::id();
 
-		//   dd($dados);
-
 		$validator = Validator::make($dados, [
 			'nome' => ['required', 'string', 'max:150'],
-			'cpf' => ['required', 'string', 'unique:clientes', 'max:14'],
+			'cpf' => ['required', 'string', 'unique:clientes,cpf', 'max:14'],
 			'data_nascimento' => ['required', 'date'],
 			'nome_mae' => ['required', 'string', 'max:150'],
 			'telefone_1' => ['required', 'string', 'max:150'],
+			'orgao_id' => ['nullable', 'exists:orgaos,id'],
 		]);
 
 		if ($validator->fails()) {
-			return redirect()->route('clientes.create')
+			return redirect()
+				->route('clientes.create')
 				->withErrors($validator)
 				->withInput();
 		}
 
-		if ($dados) {
-			$cliente->nome = $dados['nome'];
-			$cliente->cpf = $dados['cpf'];
-			$cliente->rg = $dados['rg'];
-			$cliente->data_exp = $dados['data_exp'];
-			$cliente->orgao_emissor = $dados['orgao_emissor'];
-			$cliente->data_nascimento = $dados['data_nascimento'];
+		$cliente = new Cliente();
 
-			if (empty($dados['alfabetizado'])) {
-				$cliente->alfabetizado = "0";
-			} else {
-				$cliente->alfabetizado = $dados['alfabetizado'];
-			}
+		// Campos principais
+		$cliente->nome = $dados['nome'] ?? null;
+		$cliente->cpf = $dados['cpf'] ?? null;
+		$cliente->rg = $dados['rg'] ?? null;
+		$cliente->data_exp = $dados['data_exp'] ?? null;
+		$cliente->orgao_emissor = $dados['orgao_emissor'] ?? null;
+		$cliente->data_nascimento = $dados['data_nascimento'] ?? null;
 
-			if (empty($dados['figura_publica'])) {
-				$cliente->figura_publica = "0";
-			} else {
-				$cliente->figura_publica = $dados['figura_publica'];
-			}
+		// Órgão pagador (novo relacionamento)
+		$cliente->orgao_id = $dados['orgao_id'] ?? null;
 
-			$cliente->nome_pai = $dados['nome_pai'];
-			$cliente->nome_mae = $dados['nome_mae'];
-			$cliente->endereco = $dados['endereco'];
-			$cliente->numero = $dados['numero'];
-			$cliente->complemento = $dados['complemento'];
-			$cliente->nacionalidade = $dados['nacionalidade'];
-			$cliente->naturalidade = $dados['naturalidade'];
-			$cliente->estado_civil = $dados['estado_civil'];
-			$cliente->orgao_1 = $dados['orgao_1'];
-			$cliente->matricula_1 = $dados['matricula_1'];
-			$cliente->especie_beneficio_1 = $dados['especie_beneficio_1'];
+		// Contato / endereço básicos
+		$cliente->telefone_1 = $dados['telefone_1'] ?? null;
+		$cliente->telefone_2 = $dados['telefone_2'] ?? null;
+		$cliente->telefone_3 = $dados['telefone_3'] ?? null;
+		$cliente->email = $dados['email'] ?? null;
 
-			$dados['salario_1'] = str_replace(".", "", $dados['salario_1']); // Tira a ponto
-			$dados['salario_1'] = str_replace(",", ".", $dados['salario_1']); // Tira a vírgula
-			if ($dados['salario_1'] == "") {
-				$dados['salario_1'] = null;
-			}
-			$cliente->salario_1 = $dados['salario_1'];
+		$cliente->cep = $dados['cep'] ?? null;
+		$cliente->endereco = $dados['endereco'] ?? null;
+		$cliente->numero = $dados['numero'] ?? null;
+		$cliente->complemento = $dados['complemento'] ?? null;
+		$cliente->bairro = $dados['bairro'] ?? null;
+		$cliente->cidade = $dados['cidade'] ?? null;
+		$cliente->estado = $dados['estado'] ?? null;
 
-			$cliente->banco_conta_1 = $dados['banco_conta_1'];
-			$cliente->agencia_conta_1 = $dados['agencia_conta_1'];
-			$cliente->conta_bancaria_1 = $dados['conta_bancaria_1'];
-			$cliente->orgao_2 = $dados['orgao_2'];
-			$cliente->matricula_2 = $dados['matricula_2'];
-			$cliente->especie_beneficio_2 = $dados['especie_beneficio_2'];
+		// Campos de perfil
+		$cliente->nome_mae = $dados['nome_mae'] ?? null;
+		$cliente->nome_pai = $dados['nome_pai'] ?? null;
+		$cliente->estado_civil = $dados['estado_civil'] ?? null;
+		$cliente->nacionalidade = $dados['nacionalidade'] ?? null;
 
-			$dados['salario_2'] = str_replace(".", "", $dados['salario_2']); // Tira a ponto
-			$dados['salario_2'] = str_replace(",", ".", $dados['salario_2']); // Tira a vírgula
-			if ($dados['salario_2'] == "") {
-				$dados['salario_2'] = null;
-			}
-			$cliente->salario_2 = $dados['salario_2'];
+		// Flags (alfabetizado, figura pública)
+		$cliente->alfabetizado = !empty($dados['alfabetizado']) ? 1 : 0;
+		$cliente->figura_publica = !empty($dados['figura_publica']) ? 1 : 0;
 
-			$cliente->banco_conta_2 = $dados['banco_conta_2'];
-			$cliente->agencia_conta_2 = $dados['agencia_conta_2'];
-			$cliente->conta_bancaria_2 = $dados['conta_bancaria_2'];
-			$cliente->telefone_1 = $dados['telefone_1'];
-			$cliente->telefone_2 = $dados['telefone_2'];
-			$cliente->telefone_3 = $dados['telefone_3'];
-			$cliente->user_id = $loggedId;
+		// Quem cadastrou
+		$cliente->user_id = $loggedId;
 
-			$cliente->save();
+		$cliente->save();
 
-			if ($request->proposta) {
-				return redirect()
-					->back()
-					->withSuccess('Cliente criado com sucesso.');
-			}
+		// Se veio de fluxo de proposta, só volta pra trás
+		if ($request->has('proposta') && $request->boolean('proposta')) {
 			return redirect()
-				->route('clientes.edit', compact('cliente'))
+				->back()
 				->withSuccess('Cliente criado com sucesso.');
 		}
 
-		return redirect()->route('clientes.index');
+		return redirect()
+			->route('clientes.edit', $cliente->id)
+			->withSuccess('Cliente criado com sucesso.');
 	}
 
-	public function show(Cliente $cliente)
-	{
-		//
-	}
-
+	/**
+	 * Formulário de edição
+	 */
 	public function edit($id)
 	{
-		$cliente = Cliente::find($id);
+		$cliente = Cliente::with('orgao.convenio')->find($id);
 
-		if ($cliente) {
-			return view('clientes.edit', [
-				'cliente' => $cliente
-			]);
+		if (!$cliente) {
+			return redirect()->route('clientes.index');
 		}
 
-		return redirect()->route('clientes.index');
+		$convenios = Convenio::orderBy('nome')->get();
+		$orgaos = Orgao::with('convenio')
+			->where('ativo', true)
+			->orderBy('nome')
+			->get();
+
+		return view('clientes.edit', [
+			'cliente' => $cliente,
+			'convenios' => $convenios,
+			'orgaos' => $orgaos,
+		]);
 	}
 
+	/**
+	 * Atualiza cliente
+	 */
 	public function update(Request $request, $id)
 	{
 		$cliente = Cliente::find($id);
-		$dados = $request->all();
 
-		//dd($cliente);
+		if (!$cliente) {
+			return redirect()
+				->route('clientes.index')
+				->withDanger('Cliente não encontrado.');
+		}
+
+		$dados = $request->all();
 
 		$validator = Validator::make($dados, [
 			'nome' => ['required', 'string', 'max:150'],
@@ -169,108 +175,75 @@ class ClienteController extends Controller
 			'data_nascimento' => ['required', 'date'],
 			'nome_mae' => ['required', 'string', 'max:150'],
 			'telefone_1' => ['required', 'string', 'max:150'],
+			'orgao_id' => ['nullable', 'exists:orgaos,id'],
 		]);
 
-		if ($cliente) {
-			$cliente->nome = $dados['nome'];
-
-			// 2. Alteração do cpf
-			// 2.1 Primeiro verificamos se o cpf foi alterado
-			if ($cliente->cpf != $dados['cpf']) {
-				// 2.2 Verificamos se o novo email já existe
-				$hasCpf = Cliente::where('cpf', $dados['cpf'])->get();
-
-				// 2.3 Se não existe, nós alteramos
-				if (count($hasCpf) === 0) {
-					$cliente->cpf = $dados['cpf'];
-				} else {
-					$validator->errors()->add('cpf', __('validation.unique', [
-						'attribute' => 'cpf'
-					]));
-				}
-			}
-
-			$cliente->rg = $dados['rg'];
-			$cliente->data_exp = $dados['data_exp'];
-			$cliente->orgao_emissor = $dados['orgao_emissor'];
-			$cliente->data_nascimento = $dados['data_nascimento'];
-
-			if (empty($dados['alfabetizado'])) {
-				$cliente->alfabetizado = "0";
-			} else {
-				$cliente->alfabetizado = $dados['alfabetizado'];
-			}
-
-			if (empty($dados['figura_publica'])) {
-				$cliente->figura_publica = "0";
-			} else {
-				$cliente->figura_publica = $dados['figura_publica'];
-			}
-
-			$cliente->nome_pai = $dados['nome_pai'];
-			$cliente->nome_mae = $dados['nome_mae'];
-			$cliente->endereco = $dados['endereco'];
-			$cliente->numero = $dados['numero'];
-			$cliente->complemento = $dados['complemento'];
-			$cliente->nacionalidade = $dados['nacionalidade'];
-			$cliente->naturalidade = $dados['naturalidade'];
-			$cliente->estado_civil = $dados['estado_civil'];
-			$cliente->orgao_1 = $dados['orgao_1'];
-			$cliente->matricula_1 = $dados['matricula_1'];
-			$cliente->especie_beneficio_1 = $dados['especie_beneficio_1'];
-
-			$dados['salario_1'] = str_replace(".", "", $dados['salario_1']); // Tira a ponto
-			$dados['salario_1'] = str_replace(",", ".", $dados['salario_1']); // Tira a vírgula
-			if ($dados['salario_1'] == "") {
-				$dados['salario_1'] = null;
-			}
-			$cliente->salario_1 = $dados['salario_1'];
-
-			$cliente->banco_conta_1 = $dados['banco_conta_1'];
-			$cliente->agencia_conta_1 = $dados['agencia_conta_1'];
-			$cliente->conta_bancaria_1 = $dados['conta_bancaria_1'];
-			$cliente->orgao_2 = $dados['orgao_2'];
-			$cliente->matricula_2 = $dados['matricula_2'];
-			$cliente->especie_beneficio_2 = $dados['especie_beneficio_2'];
-
-			$dados['salario_2'] = str_replace(".", "", $dados['salario_2']); // Tira a ponto
-			$dados['salario_2'] = str_replace(",", ".", $dados['salario_2']); // Tira a vírgula
-			if ($dados['salario_2'] == "") {
-				$dados['salario_2'] = null;
-			}
-			$cliente->salario_2 = $dados['salario_2'];
-
-			$cliente->banco_conta_2 = $dados['banco_conta_2'];
-			$cliente->agencia_conta_2 = $dados['agencia_conta_2'];
-			$cliente->conta_bancaria_2 = $dados['conta_bancaria_2'];
-			$cliente->telefone_1 = $dados['telefone_1'];
-			$cliente->telefone_2 = $dados['telefone_2'];
-			$cliente->telefone_3 = $dados['telefone_3'];
-
-			//dd($cliente);
-
-			//4 Verificar os Errors
-			if (count($validator->errors()) > 0) {
-				// Se tiver Erros, retorna para route Edit com o erros
-				return back()->withErrors($validator);
-			}
-
-			$cliente->save();
+		if ($validator->fails()) {
 			return redirect()
-				->route('clientes.edit', compact('cliente'))
-				->withSuccess('Cliente atualizado com sucesso.');
+				->route('clientes.edit', $id)
+				->withErrors($validator)
+				->withInput();
 		}
 
+		// Campos principais
+		$cliente->nome = $dados['nome'] ?? null;
+		$cliente->cpf = $dados['cpf'] ?? null;
+		$cliente->rg = $dados['rg'] ?? null;
+		$cliente->data_exp = $dados['data_exp'] ?? null;
+		$cliente->orgao_emissor = $dados['orgao_emissor'] ?? null;
+		$cliente->data_nascimento = $dados['data_nascimento'] ?? null;
+
+		// Órgão pagador (novo relacionamento)
+		$cliente->orgao_id = $dados['orgao_id'] ?? null;
+
+		// Contato / endereço
+		$cliente->telefone_1 = $dados['telefone_1'] ?? null;
+		$cliente->telefone_2 = $dados['telefone_2'] ?? null;
+		$cliente->telefone_3 = $dados['telefone_3'] ?? null;
+		$cliente->email = $dados['email'] ?? null;
+
+		$cliente->cep = $dados['cep'] ?? null;
+		$cliente->endereco = $dados['endereco'] ?? null;
+		$cliente->numero = $dados['numero'] ?? null;
+		$cliente->complemento = $dados['complemento'] ?? null;
+		$cliente->bairro = $dados['bairro'] ?? null;
+		$cliente->cidade = $dados['cidade'] ?? null;
+		$cliente->estado = $dados['estado'] ?? null;
+
+		// Perfil
+		$cliente->nome_mae = $dados['nome_mae'] ?? null;
+		$cliente->nome_pai = $dados['nome_pai'] ?? null;
+		$cliente->estado_civil = $dados['estado_civil'] ?? null;
+		$cliente->nacionalidade = $dados['nacionalidade'] ?? null;
+
+		// Flags
+		$cliente->alfabetizado = !empty($dados['alfabetizado']) ? 1 : 0;
+		$cliente->figura_publica = !empty($dados['figura_publica']) ? 1 : 0;
+
+		$cliente->save();
+
 		return redirect()
-			->back()
-			->withDanger();
+			->route('clientes.edit', $cliente->id)
+			->withSuccess('Cliente atualizado com sucesso.');
 	}
 
+	/**
+	 * Exclui cliente
+	 */
 	public function destroy($id)
 	{
 		$cliente = Cliente::find($id);
+
+		if (!$cliente) {
+			return redirect()
+				->route('clientes.index')
+				->withDanger('Cliente não encontrado.');
+		}
+
 		$cliente->delete();
 
-		return redirect()->route('clientes.index')->withSuccess('Cliente exluído.');
+		return redirect()
+			->route('clientes.index')
+			->withSuccess('Cliente excluído.');
 	}
 }
