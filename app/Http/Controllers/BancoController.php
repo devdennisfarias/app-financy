@@ -70,8 +70,9 @@ class BancoController extends Controller
 	 */
 	public function create()
 	{
+		$ufs = $this->listaUfs();
 		// antes: view('financeiro.bancos.create')
-		return view('financeiro.bancos.form');
+		return view('financeiro.bancos.form', compact('ufs'));
 	}
 	/**
 	 * Formulário de edição.
@@ -102,25 +103,6 @@ class BancoController extends Controller
 			->route('bancos.index')
 			->withSuccess('Banco criado com sucesso.');
 	}
-
-	public function update(Request $request, $id)
-	{
-		$banco = Banco::findOrFail($id);
-
-		$dados = $request->validate([
-			'nome' => 'required|string|max:255',
-			'codigo' => 'nullable|string|max:10',
-			'tipo' => 'required|string|max:30', // ADICIONAR
-		]);
-
-		$banco->update($dados);
-
-		return redirect()
-			->route('bancos.index')
-			->withSuccess('Banco atualizado com sucesso.');
-	}
-
-
 
 	/**
 	 * Exibe detalhes de um banco (se precisar).
