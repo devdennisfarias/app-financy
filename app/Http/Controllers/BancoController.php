@@ -8,8 +8,6 @@ use App\Models\Banco;
 use App\Models\Promotora;
 use App\Models\BancoUf;
 
-
-
 class BancoController extends Controller
 {
 	public function __construct()
@@ -64,40 +62,68 @@ class BancoController extends Controller
 		));
 	}
 
-
 	/**
 	 * Formulário de criação.
 	 */
 	public function create()
 	{
 		$ufs = $this->listaUfs();
-		// antes: view('financeiro.bancos.create')
-		return view('financeiro.bancos.form', compact('ufs'));
+		$tiposInstituicao = $this->listaTiposInstituicao();
+		$promotoras = Promotora::orderBy('nome')->get();
+
+		// usamos a mesma view de form (create/edit)
+		return view('financeiro.bancos.form', compact('ufs', 'tiposInstituicao', 'promotoras'));
 	}
+
 	/**
 	 * Formulário de edição.
 	 */
 	public function edit($id)
 	{
-		$banco = Banco::findOrFail($id);
+		$banco = Banco::with(['ufs', 'promotoras'])->findOrFail($id);
+		$ufs = $this->listaUfs();
+		$tiposInstituicao = $this->listaTiposInstituicao();
+		$promotoras = Promotora::orderBy('nome')->get();
 
-		// antes: view('financeiro.bancos.edit', ...)
-		return view('financeiro.bancos.form', compact('banco'));
+		// antes tinha um compact com bug (var_names)
+		return view('financeiro.bancos.form', compact('banco', 'ufs', 'tiposInstituicao', 'promotoras'));
 	}
 
 	/**
 	 * Salva um novo banco.
 	 */
-	// app/Http/Controllers/BancoController.php
 	public function store(Request $request)
 	{
+		$ufsValidas = array_keys($this->listaUfs());
+
 		$dados = $request->validate([
 			'nome' => 'required|string|max:255',
 			'codigo' => 'nullable|string|max:10',
-			'tipo' => 'required|string|max:30', // ADICIONAR
+			'tipo' => 'required|string|max:30',
+
+			'promotoras' => 'nullable|array',
+			'promotoras.*' => 'exists:promotoras,id',
+
+			'ufs' => 'nullable|array',
+			'ufs.*' => 'in:' . implode(',', $ufsValidas),
 		]);
 
-		Banco::create($dados);
+		// Cria o banco
+		$banco = Banco::create([
+			'nome' => $dados['nome'],
+			'codigo' => $dados['codigo'] ?? null,
+			'tipo' => $dados['tipo'],
+		]);
+
+		// Vincula promotoras, se houver
+		$banco->promotoras()->sync($dados['promotoras'] ?? []);
+
+		// Vincula estados de atuação (ufs) -> registra em banco_ufs
+		if (!empty($dados['ufs'])) {
+			foreach ($dados['ufs'] as $uf) {
+				$banco->ufs()->create(['uf' => $uf]);
+			}
+		}
 
 		return redirect()
 			->route('bancos.index')
@@ -109,7 +135,7 @@ class BancoController extends Controller
 	 */
 	public function show($id)
 	{
-		$banco = Banco::findOrFail($id);
+		$banco = Banco::with(['ufs', 'promotoras'])->findOrFail($id);
 
 		return view('financeiro.bancos.show', compact('banco'));
 	}
@@ -153,7 +179,6 @@ class BancoController extends Controller
 			->route('bancos.index')
 			->withSuccess('Banco atualizado com sucesso.');
 	}
-
 
 	/**
 	 * Remove um banco.
@@ -220,5 +245,4 @@ class BancoController extends Controller
 			'outro' => 'Outro',
 		];
 	}
-
 }

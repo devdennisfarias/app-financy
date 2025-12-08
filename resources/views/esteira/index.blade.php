@@ -9,6 +9,7 @@
 
             {{-- Cabeçalho da página --}}
             <x-page-header title="Esteira de Propostas">
+                {{-- Botão extra opcional futuramente --}}
             </x-page-header>
 
             {{-- Alertas de sessão --}}
@@ -18,7 +19,6 @@
             <x-card title="Filtros da Esteira" bodyClass="pb-2 pt-2">
                 <form method="GET" action="{{ route('esteira.index') }}">
                     <div class="row">
-
                         {{-- Data início --}}
                         <div class="col-md-2">
                             <div class="input-group input-group-static mb-3">
@@ -55,7 +55,7 @@
 
                         {{-- Produto --}}
                         <div class="col-md-3">
-                            <div class="input-group input-group-static mb-3">
+                            <div class="input-group input-group-static mb-4">
                                 <label for="produto" class="ms-0">Produto</label>
                                 <select class="form-control" id="produto" name="produto">
                                     <option value="">Todos</option>
@@ -68,7 +68,6 @@
                                 </select>
                             </div>
                         </div>
-
                     </div>
 
                     <div class="row">
@@ -99,16 +98,16 @@
                             </div>
                         </div>
 
-                        {{-- Status Atual --}}
+                        {{-- Status atual --}}
                         <div class="col-md-3">
                             <div class="input-group input-group-static mb-3">
                                 <label for="status_atual_id" class="ms-0">Status</label>
                                 <select name="status_atual_id" id="status_atual_id" class="form-control">
                                     <option value="">Todos</option>
-                                    @foreach ($statusList as $status)
-                                        <option value="{{ $status->id }}"
-                                            {{ ($filtros['status_atual_id'] ?? '') == $status->id ? 'selected' : '' }}>
-                                            {{ $status->status }}
+                                    @foreach ($statusList as $st)
+                                        <option value="{{ $st->id }}"
+                                            {{ ($filtros['status_atual_id'] ?? '') == $st->id ? 'selected' : '' }}>
+                                            {{ $st->status }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -116,18 +115,51 @@
                         </div>
                     </div>
 
-                    {{-- Botões --}}
-                    <div class="row mt-2">
-                        <div class="col-md-12 d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary mr-2">
-                                <i class="material-icons">search</i> Filtrar
-                            </button>
-                            <a href="{{ route('esteira.index') }}" class="btn btn-default">
-                                Limpar
-                            </a>
+                    <div class="row">
+                        {{-- Convênio --}}
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-3">
+                                <label for="convenio_id" class="ms-0">Convênio</label>
+                                <select name="convenio_id" id="convenio_id" class="form-control">
+                                    <option value="">Todos</option>
+                                    @foreach ($convenios as $conv)
+                                        <option value="{{ $conv->id }}"
+                                            {{ ($filtros['convenio_id'] ?? '') == $conv->id ? 'selected' : '' }}>
+                                            {{ $conv->nome }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        {{-- Órgão Pagador --}}
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-3">
+                                <label for="orgao_id" class="ms-0">Órgão Pagador</label>
+                                <select name="orgao_id" id="orgao_id" class="form-control">
+                                    <option value="">Todos</option>
+                                    @foreach ($orgaos as $org)
+                                        <option value="{{ $org->id }}"
+                                            {{ ($filtros['orgao_id'] ?? '') == $org->id ? 'selected' : '' }}>
+                                            {{ $org->nome }} ({{ optional($org->convenio)->nome }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        {{-- Botões --}}
+                        <div class="col-md-4 d-flex justify-content-end align-items-end">
+                            <div class="mb-3">
+                                <button type="submit" class="btn btn-primary mr-2">
+                                    <i class="material-icons">search</i> Filtrar
+                                </button>
+                                <a href="{{ route('esteira.index') }}" class="btn btn-default">
+                                    Limpar
+                                </a>
+                            </div>
                         </div>
                     </div>
-
                 </form>
             </x-card>
 
@@ -172,10 +204,10 @@
                 </div>
             </div>
 
-            {{-- TABELA DA ESTEIRA --}}
+            {{-- TABELA ESTILO PLANILHA --}}
             <x-card title="Lista da Esteira">
                 <x-slot name="header">
-                    <p class="card-category">Visão detalhada das propostas em andamento</p>
+                    <p class="card-category">Visão detalhada de todas as propostas em andamento</p>
                 </x-slot>
 
                 <x-table :striped="true">
@@ -193,7 +225,7 @@
                             <th>Valor Líquido</th>
                             <th>Parcela</th>
                             <th>Qtd Parcelas</th>
-                            <th>Status</th>
+                            <th>Status Atual</th>
                             <th>Usuário</th>
                             <th>Observação</th>
                             <th class="text-right">Ações</th>
@@ -201,21 +233,21 @@
                     </x-slot>
 
                     @forelse ($propostas as $p)
+                        @php
+                            $cliente = $p->cliente;
+                            $orgao = optional($cliente)->orgao;
+                            $conv = optional($orgao)->convenio;
+                            $status = $p->status_atual;
+                        @endphp
+
                         <tr>
                             <td>{{ $p->id }}</td>
                             <td>{{ $p->created_at ? $p->created_at->format('d/m/Y') : '' }}</td>
-                            <td>{{ optional($p->cliente)->nome }}</td>
-                            <td>{{ optional($p->cliente)->cpf }}</td>
+                            <td>{{ optional($cliente)->nome }}</td>
+                            <td>{{ optional($cliente)->cpf }}</td>
 
-                            {{-- Convênio (via órgão do cliente) --}}
-                            <td>
-                                {{ optional(optional(optional($p->cliente)->orgao)->convenio)->nome ?? '-' }}
-                            </td>
-
-                            {{-- Órgão pagador --}}
-                            <td>
-                                {{ optional(optional($p->cliente)->orgao)->nome ?? '-' }}
-                            </td>
+                            <td>{{ optional($conv)->nome }}</td>
+                            <td>{{ optional($orgao)->nome }}</td>
 
                             <td>{{ optional($p->produto)->nome ?? optional($p->produto)->produto }}</td>
                             <td>{{ $p->banco }}</td>
@@ -235,26 +267,7 @@
 
                             <td>{{ $p->qtd_parcelas }}</td>
 
-                            {{-- Status atual (nome, não id) --}}
-                            <td>
-                                @php
-                                    $statusNome = optional($p->status_atual)->status;
-                                @endphp
-
-                                @if ($statusNome)
-                                    <span
-                                        class="badge
-                                        @if (str_starts_with($statusNome, 'Aprov')) badge-success
-                                        @elseif (str_starts_with($statusNome, 'Pendente')) badge-warning
-                                        @elseif (str_starts_with($statusNome, 'Cancel')) badge-danger
-                                        @else badge-secondary @endif
-                                    ">
-                                        {{ $statusNome }}
-                                    </span>
-                                @else
-                                    -
-                                @endif
-                            </td>
+                            <td>{{ optional($status)->status ?? '-' }}</td>
 
                             <td>{{ optional($p->user)->name }}</td>
                             <td>{{ \Illuminate\Support\Str::limit($p->observacao ?? '', 40) }}</td>
@@ -273,10 +286,11 @@
                     @endforelse
                 </x-table>
 
-                {{-- Paginação --}}
+                {{-- paginação --}}
                 <x-slot name="footerSlot">
                     {{ $propostas->appends($filtros ?? [])->links() }}
                 </x-slot>
+
             </x-card>
 
         </div>

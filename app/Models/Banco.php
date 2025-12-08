@@ -13,6 +13,11 @@ class Banco extends Model
 		'tipo',
 	];
 
+	protected $casts = [
+		'estados' => 'array',
+	];
+
+
 
 	public function contas()
 	{
