@@ -4,10 +4,12 @@ use App\Http\Controllers\AcessoExternoController;
 use App\Http\Controllers\BancoController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ContaBancariaController;
+use App\Http\Controllers\ConvenioController;
 use App\Http\Controllers\DashboardFinanceiroController;
 use App\Http\Controllers\FornecedorController;
 use App\Http\Controllers\LancamentoFinanceiroController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\OrgaoController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\EsteiraController;
 use App\Http\Controllers\PropostaController;
@@ -158,6 +160,10 @@ Route::group(['middleware' => 'auth'], function () {
 
 	// ACESSOS EXTERNOS
 	Route::resource('acessos-externos', AcessoExternoController::class)->except(['show']);
+
+	// convenios e orgaos
+	Route::resource('convenios', ConvenioController::class)->middleware('auth');
+	Route::resource('orgaos', OrgaoController::class)->middleware('auth');
 
 
 });

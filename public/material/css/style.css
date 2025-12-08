@@ -4,11 +4,23 @@
 
 /* Fundo do submenu */
 .sidebar .nav .collapse .nav {
-    background-color: #EEEEEE !important; /* cinza escuro */
+	background-color: #EEEEEE !important;
+	/* cinza escuro */
 }
 
 /* Hover (um pouco mais claro) */
-.sidebar .nav .collapse .nav li > a:hover {
-    background-color: #e1dede !important;  /* cinza mais claro que o fundo */
+.sidebar .nav .collapse .nav li>a:hover {
+	background-color: #e1dede !important;
+	/* cinza mais claro que o fundo */
 }
 
+/* Aumentar identação dos itens de submenu no sidebar */
+.sidebar .nav .collapse .nav .nav-item .nav-link {
+	padding-left: 35px;
+	/* mais espaço à esquerda */
+}
+
+/* Opcional: deixar o ícone um pouco menor nos submenus */
+.sidebar .nav .collapse .nav .nav-item .nav-link .material-icons {
+	font-size: 18px;
+}
