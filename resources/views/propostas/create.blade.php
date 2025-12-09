@@ -1,721 +1,259 @@
-@extends('layouts.app', ['activePage' => 'propostas', 'titlePage' => __('Cadastro de Propostas')])
+@extends('layouts.app', [
+    'activePage' => 'propostas',
+    'titlePage' => __('Nova Proposta'),
+])
 
 @section('content')
     <div class="content">
-
-        @if ($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <strong>Ocorreu um Erro!</strong>
-                <br><br>
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-
-        @if (session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <strong>Confirmação!</strong> {{ session('success') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-
-        @if (session('danger'))
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {{ session('danger') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-
-        {{-- BLOCO AVISO CLIENTE NÃO ENCONTRADO --}}
-        <div id="cliente-nao-encontrado" class="d-none">
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <strong>Cliente não cadastrado</strong>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-
-            <!-- Button trigger modal -->
-            <button id="modalButton" type="button" rel="tooltip" class="btn btn-success" data-toggle="modal"
-                data-target="#cadastrar_cliente">
-                Cadastrar cliente
-                <i class="material-icons">add</i>
-            </button>
-        </div>
-
         <div class="container-fluid">
-            <div class="row">
-                <div class="col-12 text-right">
-                    <a href="{{ url()->previous() }}" class="btn btn-sm btn">
-                        <i class="material-icons">reply</i>
-                    </a>
-                </div>
-            </div>
 
-            <div class="row">
-                <div class="col-md-12">
+            {{-- Cabeçalho --}}
+            <x-page-header title="Nova Proposta">
+                <a href="{{ route('propostas.index') }}" class="btn btn-default btn-sm">
+                    <i class="material-icons">list</i> Lista de Propostas
+                </a>
+            </x-page-header>
 
-                    <div class="card">
-                        <div class="card-header card-header-primary">
-                            <h4 class="card-title ">Cadastro de Propostas</h4>
+            {{-- Alertas --}}
+            <x-session-alerts class="mb-3" />
+
+            <x-card>
+
+                <form method="POST" action="{{ route('propostas.store') }}">
+                    @csrf
+
+                    {{-- LINHA 1: CPF, Nome Cliente (exibição), Produto --}}
+                    <div class="row">
+
+                        {{-- CPF DO CLIENTE --}}
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-3">
+                                <label for="cpf" class="ms-0">CPF do Cliente</label>
+                                <input type="text" name="cpf" id="cpf" class="form-control"
+                                    value="{{ old('cpf') }}" required>
+                            </div>
+
+                            {{-- BLOCO DE "CLIENTE NÃO ENCONTRADO" --}}
+                            <div id="cliente-nao-encontrado" class="mt-2 d-none">
+                                <span class="text-danger">Cliente não encontrado.</span>
+
+                                <a id="btn-cadastrar-cliente" href="#" class="btn btn-sm btn-primary ml-2">
+                                    Cadastrar Cliente
+                                </a>
+                            </div>
+
+                            {{-- BLOCO DE "CLIENTE ENCONTRADO" --}}
+                            <div id="cliente-encontrado" class="mt-2 d-none">
+                                <span class="text-success">
+                                    Cliente encontrado:
+                                    <strong id="cliente-encontrado-nome"></strong>
+                                </span>
+                            </div>
                         </div>
 
-                        <form name="cadastro_proposta" method="post" action="{{ route('propostas.store') }}"
-                            class="form-horizontal" enctype="multipart/form-data">
-                            @csrf
+                        {{-- NOME DO CLIENTE (APENAS EXIBIÇÃO DIDÁTICA) --}}
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-3">
+                                <label class="ms-0">Nome do Cliente</label>
+                                <input type="text" id="cliente_nome" class="form-control" value="" readonly>
+                            </div>
+                        </div>
 
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-12">
+                        {{-- PRODUTO (COM BANCO CONCATENADO) --}}
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-3">
+                                <label for="produto_id" class="ms-0">Produto</label>
+                                <select name="produto_id" id="produto_id" class="form-control" required>
+                                    <option value="">Selecione</option>
+                                    @foreach ($produtos as $produto)
+                                        <option value="{{ $produto->id }}"
+                                            data-banco-id="{{ optional($produto->instituicao)->id }}"
+                                            data-banco-nome="{{ optional($produto->instituicao)->nome }}"
+                                            {{ old('produto_id') == $produto->id ? 'selected' : '' }}>
+                                            {{ $produto->produto }}
+                                            @if ($produto->instituicao)
+                                                - {{ $produto->instituicao->nome }}
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
 
-                                        {{-- CPF + VENDEDOR --}}
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">CPF Cliente</label>
-                                                    <input id="cpf" type="text" class="form-control" name="cpf"
-                                                        value="{{ old('cpf') }}">
-                                                </div>
-                                            </div>
+                    </div>
 
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Nome Cliente</label>
-                                                    <input id="nome_cliente" type="text" class="form-control"
-                                                        value="" readonly>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Vendedor</label>
-                                                    <input value="{{ $user->name }}" readonly="readonly" type="text"
-                                                        class="form-control">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- ORGÃO --}}
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Orgão</label>
-                                                    <input id="orgao" type="text" class="form-control" name="orgao"
-                                                        value="{{ old('orgao') }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- PRODUTO + BANCO + VALORES --}}
-                                        <div class="row">
-                                            {{-- Produto primeiro --}}
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Selecione um Produto</label>
-                                                    <select id="produto_id" class="form-control" name="produto_id" required>
-                                                        <option value="">Selecione...</option>
-                                                        @foreach ($produtos as $produto)
-                                                            <option value="{{ $produto->id }}"
-                                                                data-instituicao-id="{{ optional($produto->instituicao)->id }}"
-                                                                data-instituicao-nome="{{ optional($produto->instituicao)->nome }}"
-                                                                {{ old('produto_id') == $produto->id ? 'selected' : '' }}>
-                                                                {{ $produto->produto }}
-                                                                @if ($produto->instituicao)
-                                                                    — {{ $produto->instituicao->nome }}
-                                                                @endif
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            {{-- Banco - somente leitura, preenchido pelo produto --}}
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Banco</label>
-
-                                                    {{-- visível (readonly) --}}
-                                                    <input id="banco_label" type="text" class="form-control"
-                                                        value="{{ old('banco') }}" readonly>
-
-                                                    {{-- hidden que vão pro backend --}}
-                                                    <input type="hidden" name="banco" id="banco"
-                                                        value="{{ old('banco') }}">
-                                                    <input type="hidden" name="banco_id" id="banco_id"
-                                                        value="{{ old('banco_id') }}">
-                                                </div>
-                                            </div>
-
-                                            {{-- Valor Bruto --}}
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Valor Bruto</label>
-                                                    <input id="valor_bruto" type="text" class="form-control money"
-                                                        name="valor_bruto" value="{{ old('valor_bruto') }}">
-                                                </div>
-                                            </div>
-
-                                            {{-- Valor Líquido --}}
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Valor Líquido Liberado</label>
-                                                    <input id="valor_liquido_liberado" type="text"
-                                                        class="form-control money" name="valor_liquido_liberado"
-                                                        value="{{ old('valor_liquido_liberado') }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- JUROS / PARCELA / PRAZO --}}
-                                        <div class="row">
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Tx de Júros</label>
-                                                    <input id="tx_juros" type="text" class="form-control money"
-                                                        name="tx_juros" value="{{ old('tx_juros') }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Valor da Parcela</label>
-                                                    <input id="valor_parcela" type="text" class="form-control money"
-                                                        name="valor_parcela" value="{{ old('valor_parcela') }}">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label>Qtd Parcelas</label>
-                                                    <input type="number" class="form-control" name="qtd_parcelas"
-                                                        value="{{ old('qtd_parcelas') }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- BENEFÍCIOS / SALÁRIOS (informativos, preenchidos via CPF) --}}
-                                        <div class="row">
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Espécie Benefício</label>
-                                                    <input id="especie_beneficio_1" readonly="readonly" type="text"
-                                                        class="form-control" value="">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Salário</label>
-                                                    <input id="salario_1" readonly="readonly" type="text"
-                                                        class="form-control" value="">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Espécie Benefício 2</label>
-                                                    <input id="especie_beneficio_2" readonly="readonly" type="text"
-                                                        class="form-control" value="">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Salário 2</label>
-                                                    <input id="salario_2" readonly="readonly" type="text"
-                                                        class="form-control" value="">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- DOCUMENTOS --}}
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label class="btn btn-success" for="file">
-                                                        <i class="material-icons">books</i>
-                                                        <span>Selecionar documentos</span>
-                                                    </label>
-                                                    <input id="file" style="display:none" type="file"
-                                                        name="documentos[]" multiple>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- BOTÕES --}}
-                                        <div class="row">
-                                            <div class="col-md-12 text-right">
-                                                <div class="form-group">
-                                                    <button type="button"
-                                                        onclick="window.location='{{ route('propostas.index') }}'"
-                                                        class="btn btn-fill btn-danger">Cancelar</button>
-                                                    <button type="submit"
-                                                        class="btn btn-fill btn-success">Cadastrar</button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div><!-- col-md-12 -->
-                                </div><!-- row -->
-                            </div><!-- card-body -->
-                        </form>
-                    </div> <!-- fim card -->
-                </div><!-- fim col-12 -->
-            </div><!-- fim row -->
-        </div><!-- fim container-fluid -->
-    </div><!-- Fim content -->
-
-    <!-- Modal CADASTRO CLIENTE (mantido como estava) -->
-    <div class="modal fade" id="cadastrar_cliente" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
-        <div style="max-width: 1200px;" class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">
-                        <strong></strong>
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div style="text-align:left" class="modal-body">
-
+                    {{-- LINHA 2: Banco, Valor Bruto, Valor Líquido --}}
                     <div class="row">
-                        <div class="col-md-12">
-                            <div class="card">
-                                <form id="form_clientes" method="post" action="{{ route('clientes.store') }}"
-                                    class="form-horizontal">
-                                    @csrf
-                                    <div class="card-header card-header-primary">
-                                        <h4 class="card-title ">Formulário de Cadastro</h4>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-12">
 
-                                                <div class="row">
-                                                    <div class="col-md-12">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Nome*</label>
-                                                            <input id="nome" type="text" class="form-control"
-                                                                name="nome" value="{{ old('nome') }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">CPF*</label>
-                                                            <input id="cpfModal" type="text" class="form-control"
-                                                                name="cpf" value="{{ old('cpf') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <div class="input-group date" data-provide="datepicker">
-                                                                <label>Nascimento:* &nbsp; </label>
-                                                                <input id="data_nascimento" type="date"
-                                                                    class="form-control datepicker" name="data_nascimento"
-                                                                    value="{{ old('data_nascimento') }}">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <div class="togglebutton">
-                                                            <input id="alfabetizado" name="alfabetizado" type="checkbox"
-                                                                value="1" checked>
-                                                            <span class="toggle"></span>
-                                                            <label>
-                                                                Alfabetizado
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <div class="togglebutton">
-                                                            <input id="figura_publica" name="figura_publica"
-                                                                type="checkbox" value="1">
-                                                            <span class="toggle"></span>
-                                                            <label>
-                                                                Figura Pública
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                        {{-- BANCO (SERÁ SELECIONADO AUTOMATICAMENTE PELO PRODUTO, SE POSSÍVEL) --}}
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-3">
+                                <label for="banco_id" class="ms-0">Banco</label>
+                                <select name="banco_id" id="banco_id" class="form-control">
+                                    <option value="">Automático pelo produto</option>
+                                    @foreach ($instituicoes as $banco)
+                                        <option value="{{ $banco->id }}"
+                                            {{ old('banco_id') == $banco->id ? 'selected' : '' }}>
+                                            {{ $banco->nome }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
 
-                                                <div class="row">
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">RG</label>
-                                                            <input id="rg" type="text" class="form-control"
-                                                                name="rg" value="{{ old('rg') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <div class="input-group date" data-provide="datepicker">
-                                                                <label>Expedição: &nbsp; </label>
-                                                                <input id="data_exp" type="date" class="form-control"
-                                                                    name="data_exp" value="{{ old('data_exp') }}">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class=" col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Orgão Emissor</label>
-                                                            <input id="orgao_emissor" type="text" class="form-control"
-                                                                name="orgao_emissor" value="{{ old('orgao_emissor') }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
+                        {{-- Valor Bruto --}}
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-3">
+                                <label class="ms-0">Valor Bruto</label>
+                                <input type="text" name="valor_bruto" class="form-control"
+                                    value="{{ old('valor_bruto') }}">
+                            </div>
+                        </div>
 
-                                                <div class="row">
-                                                    <div class="col-md-12">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Nome do Pai</label>
-                                                            <input id="nome_pai" type="text" class="form-control"
-                                                                name="nome_pai" value="{{ old('nome_pai') }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="row">
-                                                    <div class="col-md-12">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Nome da Mãe*</label>
-                                                            <input id="nome_mae" type="text" class="form-control"
-                                                                name="nome_mae" value="{{ old('nome_mae') }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="row">
-                                                    <div class="col-md-8">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Endereço</label>
-                                                            <input id="endereco" type="text" class="form-control"
-                                                                name="endereco" value="{{ old('endereco') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-1">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Número</label>
-                                                            <input id="numero" type="text" class="form-control"
-                                                                name="numero" value="{{ old('numero') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Complemento</label>
-                                                            <input id="complemento" type="text" class="form-control"
-                                                                name="complemento" value="{{ old('complemento') }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="row">
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Naturalidade</label>
-                                                            <input id="naturalidade" type="text" class="form-control"
-                                                                name="naturalidade" value="{{ old('naturalidade') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Nacionalidade</label>
-                                                            <input id="nacionalidade" type="text" class="form-control"
-                                                                name="nacionalidade" value="{{ old('nacionalidade') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Estado Civil</label>
-                                                            <input id="estado_civil" type="text" class="form-control"
-                                                                name="estado_civil" value="{{ old('estado_civil') }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="row">
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Orgão</label>
-                                                            <input id="orgao_1" type="text" class="form-control"
-                                                                name="orgao_1" value="{{ old('orgao_1') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Matrícula</label>
-                                                            <input id="matricula_1" type="text" class="form-control"
-                                                                name="matricula_1" value="{{ old('matricula_1') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Especie Beneficio</label>
-                                                            <input id="especie_beneficio_1" type="text"
-                                                                class="form-control" name="especie_beneficio_1"
-                                                                value="{{ old('especie_beneficio_1') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Salário</label>
-                                                            <input id="salario_1Modal" type="text"
-                                                                class="form-control" name="salario_1"
-                                                                value="{{ old('salario_1') }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Banco</label>
-                                                            <input id="banco_conta_1" type="text" class="form-control"
-                                                                name="banco_conta_1" value="{{ old('banco_conta_1') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Agência</label>
-                                                            <input id="agencia_conta_1" type="text"
-                                                                class="form-control" name="agencia_conta_1"
-                                                                value="{{ old('agencia_conta_1') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Número da Conta</label>
-                                                            <input id="conta_bancaria_1" type="text"
-                                                                class="form-control" name="conta_bancaria_1"
-                                                                value="{{ old('conta_bancaria_1') }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="row">
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Orgão 2</label>
-                                                            <input id="orgao_2" type="text" class="form-control"
-                                                                name="orgao_2" value="{{ old('orgao_2') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Matrícula 2</label>
-                                                            <input id="matricula_2" type="text" class="form-control"
-                                                                name="matricula_2" value="{{ old('matricula_2') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Especie Beneficio 2</label>
-                                                            <input id="especie_beneficio_2" type="text"
-                                                                class="form-control" name="especie_beneficio_2"
-                                                                value="{{ old('especie_beneficio_2') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Salário 2</label>
-                                                            <input id="salario_2Modal" type="text"
-                                                                class="form-control" name="salario_2"
-                                                                value="{{ old('salario_2') }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class=" row">
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Banco 2</label>
-                                                            <input id="banco_conta_2" type="text" class="form-control"
-                                                                name="banco_conta_2" value="{{ old('banco_conta_2') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Agência 2</label>
-                                                            <input id="agencia_conta_2" type="text"
-                                                                class="form-control" name="agencia_conta_2"
-                                                                value="{{ old('agencia_conta_2') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Número da Conta 2</label>
-                                                            <input id="conta_bancaria_2" type="text"
-                                                                class="form-control" name="conta_bancaria_2"
-                                                                value="{{ old('conta_bancaria_2') }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="row">
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Telefone 1*</label>
-                                                            <input id="telefone_1Modal" type="text"
-                                                                class="form-control" name="telefone_1"
-                                                                value="{{ old('telefone_1') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Telefone 2</label>
-                                                            <input id="telefone_2Modal" type="text"
-                                                                class="form-control" name="telefone_2"
-                                                                value="{{ old('telefone_2') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="bmd-label-floating">Telefone 3</label>
-                                                            <input id="telefone_3Modal" type="text"
-                                                                class="form-control" name="telefone_3"
-                                                                value="{{ old('telefone_3') }}">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-12 text-right">
-                                                        <div class="form-group">
-                                                            <input style="display: none" value="proposta"
-                                                                name="proposta">
-                                                            <button type="button"
-                                                                onclick="window.location='{{ route('propostas.create') }}'"
-                                                                class="btn btn-fill btn-danger">Cancelar</button>
-                                                            <button type="submit"
-                                                                class="btn btn-fill btn-success">Cadastrar</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </form>
-                            </div> <!--fim card-->
+                        {{-- Valor Líquido --}}
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-3">
+                                <label class="ms-0">Valor Líquido Liberado</label>
+                                <input type="text" name="valor_liquido_liberado" class="form-control"
+                                    value="{{ old('valor_liquido_liberado') }}">
+                            </div>
                         </div>
                     </div>
 
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" data-dismiss="modal">Fechar</button>
-                </div>
-            </div>
+                    {{-- LINHA 3: Parcela, Qtd Parcelas, Taxa, Órgão --}}
+                    <div class="row">
+                        {{-- Valor Parcela --}}
+                        <div class="col-md-3">
+                            <div class="input-group input-group-static mb-3">
+                                <label class="ms-0">Valor da Parcela</label>
+                                <input type="text" name="valor_parcela" class="form-control"
+                                    value="{{ old('valor_parcela') }}">
+                            </div>
+                        </div>
+
+                        {{-- Qtd Parcelas --}}
+                        <div class="col-md-3">
+                            <div class="input-group input-group-static mb-3">
+                                <label class="ms-0">Qtd Parcelas</label>
+                                <input type="number" name="qtd_parcelas" class="form-control"
+                                    value="{{ old('qtd_parcelas') }}">
+                            </div>
+                        </div>
+
+                        {{-- Taxa de Juros --}}
+                        <div class="col-md-3">
+                            <div class="input-group input-group-static mb-3">
+                                <label class="ms-0">Taxa de Juros</label>
+                                <input type="text" name="tx_juros" class="form-control" value="{{ old('tx_juros') }}">
+                            </div>
+                        </div>
+
+                        {{-- Órgão (livre – por enquanto) --}}
+                        <div class="col-md-3">
+                            <div class="input-group input-group-static mb-3">
+                                <label class="ms-0">Órgão</label>
+                                <input type="text" name="orgao" class="form-control" value="{{ old('orgao') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- BOTÕES --}}
+                    <div class="row">
+                        <div class="col-md-12 text-right">
+                            <button type="submit" class="btn btn-success">
+                                <i class="material-icons">save</i> Salvar Proposta
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+
+            </x-card>
+
         </div>
     </div>
-
 @endsection
 
 @section('post-script')
     <script>
-        // Consulta CPF e preenche dados do cliente
-        $(document).ready(function() {
-            $("#cpf").blur(function() {
-                let cpf = $("#cpf").val();
-                $.get("{{ route('propostas.consulta-cpf') }}", {
-                    cpf: cpf
-                }, function(data, status) {
-                    if (data == false) {
-                        $("#cliente-nao-encontrado").removeClass("d-none");
-                        $('#cpfModal').val($("#cpf").val());
-                        $('#nome_cliente').val('');
-                    } else {
-                        $("#cliente-nao-encontrado").addClass("d-none");
-
-                        $('#nome_cliente').val(data['nome'] ?? '');
-
-                        $('#orgao').val(data['orgao_1']);
-                        $('#salario_1').val(data['salario_1']);
-                        $('#especie_beneficio_1').val(data['especie_beneficio_1']);
-                        $('#salario_2').val(data['salario_2']);
-                        $('#especie_beneficio_2').val(data['especie_beneficio_2']);
-                    }
-                });
-            });
-        });
-
-        // Ao trocar o produto, preencher banco (readonly) + banco_id
         document.addEventListener('DOMContentLoaded', function() {
-            var produtoSelect = document.getElementById('produto_id');
-            var bancoLabel = document.getElementById('banco_label');
-            var bancoInput = document.getElementById('banco');
-            var bancoIdInput = document.getElementById('banco_id');
+            const cpfInput = document.getElementById('cpf');
+            const boxNaoEncontrado = document.getElementById('cliente-nao-encontrado');
+            const btnCadastrar = document.getElementById('btn-cadastrar-cliente');
+            const boxEncontrado = document.getElementById('cliente-encontrado');
+            const spanNomeCliente = document.getElementById('cliente-encontrado-nome');
+            const inputNomeCliente = document.getElementById('cliente_nome');
 
-            if (produtoSelect) {
-                if (!produtoSelect.value) {
-                    if (bancoLabel) bancoLabel.value = '';
-                    if (bancoInput) bancoInput.value = '';
-                    if (bancoIdInput) bancoIdInput.value = '';
+            const produtoSelect = document.getElementById('produto_id');
+            const bancoSelect = document.getElementById('banco_id');
+
+            // 🔹 CPF: consulta cliente e exibe nome + opções
+            cpfInput.addEventListener('blur', function() {
+                let cpf = this.value.replace(/\D/g, '');
+                if (!cpf) {
+                    boxNaoEncontrado.classList.add('d-none');
+                    boxEncontrado.classList.add('d-none');
+                    inputNomeCliente.value = '';
+                    return;
                 }
 
-                produtoSelect.addEventListener('change', function() {
-                    var opt = produtoSelect.options[produtoSelect.selectedIndex];
-                    if (!opt) return;
+                fetch("{{ route('propostas.consulta-cpf') }}?cpf=" + cpf)
+                    .then(res => res.json())
+                    .then(data => {
+                        // Garante compatibilidade:
+                        // - novo formato: { exists: true, cliente: {...} }
+                        // - antigo: objeto direto de cliente ou false
+                        let exists = false;
+                        let cliente = null;
 
-                    var instId = opt.getAttribute('data-instituicao-id');
-                    var instNome = opt.getAttribute('data-instituicao-nome');
+                        if (typeof data === 'object' && data !== null && 'exists' in data) {
+                            // Formato novo
+                            exists = !!data.exists;
+                            cliente = data.cliente;
+                        } else if (data && typeof data === 'object' && 'id' in data) {
+                            // Formato antigo (retornando o próprio cliente)
+                            exists = true;
+                            cliente = data;
+                        }
 
-                    if (bancoLabel) bancoLabel.value = instNome || '';
-                    if (bancoInput) bancoInput.value = instNome || '';
-                    if (bancoIdInput) bancoIdInput.value = instId || '';
-                });
-            }
+                        if (!exists || !cliente) {
+                            // Não encontrou
+                            boxNaoEncontrado.classList.remove('d-none');
+                            boxEncontrado.classList.add('d-none');
+                            inputNomeCliente.value = '';
 
-            // MÁSCARA CAMPOS MONETÁRIOS
-            function aplicarMascaraMoney(input) {
-                input.addEventListener('input', function() {
-                    let v = input.value;
-                    v = v.replace(/\D/g, '');
+                            let url = "{{ route('clientes.create') }}";
+                            url += "?from=propostas.create&cpf=" + cpf;
 
-                    if (!v) {
-                        input.value = '';
-                        return;
-                    }
+                            btnCadastrar.href = url;
+                        } else {
+                            // Encontrou cliente
+                            boxNaoEncontrado.classList.add('d-none');
+                            boxEncontrado.classList.remove('d-none');
 
-                    v = (parseInt(v, 10) / 100).toFixed(2);
-                    v = v.replace('.', ',');
-
-                    input.value = v;
-                });
-
-                if (input.value) {
-                    let v = input.value.toString();
-                    v = v.replace(/\./g, '').replace(',', '');
-                    if (v) {
-                        v = (parseInt(v, 10) / 100).toFixed(2);
-                        v = v.replace('.', ',');
-                        input.value = v;
-                    }
-                }
-            }
-
-            document.querySelectorAll('.money').forEach(function(input) {
-                aplicarMascaraMoney(input);
+                            const nome = cliente.nome || '';
+                            spanNomeCliente.textContent = nome;
+                            inputNomeCliente.value = nome;
+                        }
+                    })
+                    .catch(() => {
+                        // Em caso de erro na requisição, não quebra a tela toda
+                        boxNaoEncontrado.classList.add('d-none');
+                        boxEncontrado.classList.add('d-none');
+                        inputNomeCliente.value = '';
+                    });
             });
 
-            const form = document.querySelector("form[name='cadastro_proposta']");
-            if (form) {
-                form.addEventListener('submit', function() {
-                    document.querySelectorAll('.money').forEach(function(input) {
-                        let v = input.value;
-                        if (!v) return;
+            // 🔹 Produto: ao mudar, ajustar automaticamente o banco se tiver vínculo
+            produtoSelect.addEventListener('change', function() {
+                const opt = this.options[this.selectedIndex];
+                const bancoId = opt.getAttribute('data-banco-id');
+                const bancoNome = opt.getAttribute('data-banco-nome');
 
-                        v = v.replace(/\./g, '').replace(',', '.');
-
-                        input.value = v;
-                    });
-                });
-            }
+                if (bancoId) {
+                    bancoSelect.value = bancoId;
+                }
+            });
         });
     </script>
 @endsection

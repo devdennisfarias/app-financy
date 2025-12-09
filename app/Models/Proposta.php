@@ -69,10 +69,18 @@ class Proposta extends Model
 	 * Status principal da proposta (tabela status).
 	 * Usar nas telas: $proposta->status_atual->status
 	 */
+	// relação principal, padrão snake_case
 	public function status_atual()
 	{
 		return $this->belongsTo(Status::class, 'status_atual_id');
 	}
+
+	// alias para compatibilidade com código antigo (HomeController, etc.)
+	public function statusAtual()
+	{
+		return $this->status_atual();
+	}
+
 
 	/**
 	 * Alias: $proposta->status

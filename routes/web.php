@@ -86,10 +86,6 @@ Route::group(['middleware' => 'auth'], function () {
 	/* INICIO ROTAS DE PRODUÇÃO */
 	Route::resource('producao', ProducaoController::class)->names('producao');
 
-	// Produção por usuário (novo módulo)
-	Route::get('producao-usuario', [ProducaoController::class, 'porUsuario'])->name('producao.usuario');
-	/* FIM ROTAS DE PRODUÇÃO */
-
 	/* INICIO ROTAS DE ESTEIRA */
 	Route::resource('esteira', EsteiraController::class)->names('esteira');
 	Route::post('esteira/atualizar-status', [EsteiraController::class, 'atualizarStatus'])->name('esteira.atualizar-status')->middleware('can:propostas.edit');

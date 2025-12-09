@@ -125,10 +125,27 @@ class ClienteController extends Controller
 				->withSuccess('Cliente criado com sucesso.');
 		}
 
+		// ✅ Se veio da edição de clientes, volta para edição.        
+		if ($request->filled('from') && $request->from === 'clientes.edit') {
+			return redirect()
+				->route('clientes.edit', $cliente->id)
+				->withSuccess('Cliente criado com sucesso.');
+		}
+		// ✅ Se veio da proposta, volta para a proposta
+		if ($request->filled('from') && $request->from === 'propostas.create') {
+			return redirect()
+				->route('propostas.create')
+				->with('cliente_id', $cliente->id)
+				->withSuccess('Cliente cadastrado com sucesso. Continue a proposta.');
+		}
+
+		// ✅ Fluxo normal
 		return redirect()
-			->route('clientes.edit', $cliente->id)
-			->withSuccess('Cliente criado com sucesso.');
+			->route('clientes.index')
+			->withSuccess('Cliente cadastrado com sucesso.');
+
 	}
+
 
 	/**
 	 * Formulário de edição
@@ -159,73 +176,46 @@ class ClienteController extends Controller
 	 */
 	public function update(Request $request, $id)
 	{
-		$cliente = Cliente::find($id);
+		$cliente = Cliente::findOrFail($id);
 
-		if (!$cliente) {
-			return redirect()
-				->route('clientes.index')
-				->withDanger('Cliente não encontrado.');
-		}
-
-		$dados = $request->all();
-
-		$validator = Validator::make($dados, [
-			'nome' => ['required', 'string', 'max:150'],
-			'cpf' => ['required', 'string', 'max:14'],
-			'data_nascimento' => ['required', 'date'],
-			'nome_mae' => ['required', 'string', 'max:150'],
-			'telefone_1' => ['required', 'string', 'max:150'],
-			'orgao_id' => ['nullable', 'exists:orgaos,id'],
+		$dados = $request->validate([
+			'nome' => 'required|string|max:255',
+			'cpf' => 'required|string|max:20',
+			'rg' => 'nullable|string|max:30',
+			'data_exp' => 'nullable|date',
+			'orgao_emissor' => 'nullable|string|max:50',
+			'data_nascimento' => 'nullable|date',
+			'orgao_id' => 'nullable|exists:orgaos,id',
+			'telefone_1' => 'nullable|string|max:20',
+			'telefone_2' => 'nullable|string|max:20',
+			'telefone_3' => 'nullable|string|max:20',
+			'email' => 'nullable|email|max:255',
+			'cep' => 'nullable|string|max:20',
+			'endereco' => 'nullable|string|max:255',
+			'numero' => 'nullable|string|max:20',
+			'complemento' => 'nullable|string|max:255',
+			'bairro' => 'nullable|string|max:100',
+			'cidade' => 'nullable|string|max:100',
+			'estado' => 'nullable|string|max:2',
+			'nome_mae' => 'nullable|string|max:255',
+			'nome_pai' => 'nullable|string|max:255',
+			'estado_civil' => 'nullable|string|max:50',
+			'nacionalidade' => 'nullable|string|max:100',
+			'alfabetizado' => 'nullable|boolean',
+			'figura_publica' => 'nullable|boolean',
 		]);
 
-		if ($validator->fails()) {
-			return redirect()
-				->route('clientes.edit', $id)
-				->withErrors($validator)
-				->withInput();
-		}
+		// checkbox vem como "on" ou null, então garantimos boolean
+		$dados['alfabetizado'] = $request->has('alfabetizado');
+		$dados['figura_publica'] = $request->has('figura_publica');
 
-		// Campos principais
-		$cliente->nome = $dados['nome'] ?? null;
-		$cliente->cpf = $dados['cpf'] ?? null;
-		$cliente->rg = $dados['rg'] ?? null;
-		$cliente->data_exp = $dados['data_exp'] ?? null;
-		$cliente->orgao_emissor = $dados['orgao_emissor'] ?? null;
-		$cliente->data_nascimento = $dados['data_nascimento'] ?? null;
-
-		// Órgão pagador (novo relacionamento)
-		$cliente->orgao_id = $dados['orgao_id'] ?? null;
-
-		// Contato / endereço
-		$cliente->telefone_1 = $dados['telefone_1'] ?? null;
-		$cliente->telefone_2 = $dados['telefone_2'] ?? null;
-		$cliente->telefone_3 = $dados['telefone_3'] ?? null;
-		$cliente->email = $dados['email'] ?? null;
-
-		$cliente->cep = $dados['cep'] ?? null;
-		$cliente->endereco = $dados['endereco'] ?? null;
-		$cliente->numero = $dados['numero'] ?? null;
-		$cliente->complemento = $dados['complemento'] ?? null;
-		$cliente->bairro = $dados['bairro'] ?? null;
-		$cliente->cidade = $dados['cidade'] ?? null;
-		$cliente->estado = $dados['estado'] ?? null;
-
-		// Perfil
-		$cliente->nome_mae = $dados['nome_mae'] ?? null;
-		$cliente->nome_pai = $dados['nome_pai'] ?? null;
-		$cliente->estado_civil = $dados['estado_civil'] ?? null;
-		$cliente->nacionalidade = $dados['nacionalidade'] ?? null;
-
-		// Flags
-		$cliente->alfabetizado = !empty($dados['alfabetizado']) ? 1 : 0;
-		$cliente->figura_publica = !empty($dados['figura_publica']) ? 1 : 0;
-
-		$cliente->save();
+		$cliente->update($dados);
 
 		return redirect()
 			->route('clientes.edit', $cliente->id)
 			->withSuccess('Cliente atualizado com sucesso.');
 	}
+
 
 	/**
 	 * Exclui cliente

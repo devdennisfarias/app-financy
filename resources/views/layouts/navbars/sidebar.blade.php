@@ -29,7 +29,7 @@
                     'produtos',
                     'users',
                     'fornecedores',
-                    'Instituições',
+                    'bancos',
                     'convenios',
                     'orgaos',
                 ]);
@@ -157,7 +157,7 @@
                         @endcan
 
                         @can('bancos.index')
-                            <li class="nav-item{{ ($activePage ?? '') == 'Instituições' ? ' active' : '' }}">
+                            <li class="nav-item{{ ($activePage ?? '') == 'bancos' ? ' active' : '' }}">
                                 <a class="nav-link" href="{{ route('bancos.index') }}">
                                     <i class="material-icons">account_balance_wallet</i>
                                     <span class="sidebar-normal">{{ __('Instituições') }}</span>
@@ -231,13 +231,6 @@
                                 <a class="nav-link" href="{{ route('producao.index') }}">
                                     <i class="material-icons">bar_chart</i>
                                     <span class="sidebar-normal">{{ __('Produção Geral') }}</span>
-                                </a>
-                            </li>
-
-                            <li class="nav-item{{ ($activePage ?? '') == 'producao-usuario' ? ' active' : '' }}">
-                                <a class="nav-link" href="{{ route('producao.usuario') }}">
-                                    <i class="material-icons">person_search</i>
-                                    <span class="sidebar-normal">{{ __('Produção por Usuário') }}</span>
                                 </a>
                             </li>
                         @endcan

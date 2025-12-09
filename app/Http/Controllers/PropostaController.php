@@ -35,7 +35,7 @@ class PropostaController extends Controller
 		]);
 	}
 
-	public function create()
+	public function create(Request $request)
 	{
 		$produtos = Produto::with('instituicao')
 			->orderBy('produto')
@@ -45,12 +45,20 @@ class PropostaController extends Controller
 
 		$user = Auth::user();
 
+		// ✅ Se veio de um cadastro de cliente, já pré-carrega o cliente
+		$cliente = null;
+		if (session()->has('cliente_id')) {
+			$cliente = Cliente::find(session('cliente_id'));
+		}
+
 		return view('propostas.create', compact(
 			'produtos',
 			'instituicoes',
-			'user'
+			'user',
+			'cliente'
 		));
 	}
+
 
 	public function edit($id)
 	{
@@ -213,14 +221,26 @@ class PropostaController extends Controller
 
 	public function consultaCpf(Request $request)
 	{
-		$cpf = $request->cpf;
-		$cliente = Cliente::where("cpf", $cpf)->first();
+		// Normaliza CPF (só números)
+		$cpf = preg_replace('/\D/', '', $request->input('cpf'));
 
-		if (!$cliente) {
-			$cliente = false;
-		}
-		return $cliente;
+		// Compara removendo máscara também no banco
+		$cliente = Cliente::whereRaw(
+			'REPLACE(REPLACE(REPLACE(cpf, ".", ""), "-", ""), " ", "") = ?',
+			[$cpf]
+		)->first();
+
+		// Sempre devolve um JSON padronizado
+		return response()->json([
+			'exists' => (bool) $cliente,
+			'cliente' => $cliente ? [
+				'id' => $cliente->id,
+				'nome' => $cliente->nome,
+				'cpf' => $cliente->cpf,
+			] : null,
+		]);
 	}
+
 
 	public function deletarDoc($id)
 	{
