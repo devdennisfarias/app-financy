@@ -160,9 +160,16 @@ Route::group(['middleware' => 'auth'], function () {
 	// convenios e orgaos
 	Route::resource('convenios', ConvenioController::class)->middleware('auth');
 	Route::resource('orgaos', OrgaoController::class)->middleware('auth');
+
 	// BUSCAR ÓRGÃOS POR CONVÊNIO (AJAX)
-	Route::get('orgaos/by-convenio', [OrgaoController::class, 'byConvenio'])
-		->name('orgaos.by-convenio');
+	Route::get('orgaos/by-convenio', [OrgaoController::class, 'byConvenio'])->name('orgaos.by-convenio');
+
+	/* INICIO ROTAS DE CARTEIRA - IMPORTAÇÃO */
+	Route::get('carteiras/importar', [CarteiraController::class, 'importForm'])->name('carteiras.import.form')->middleware('can:carteiras.create');
+
+	Route::post('carteiras/importar', [CarteiraController::class, 'importStore'])->name('carteiras.import.store')->middleware('can:carteiras.create');
+	/* FIM ROTAS DE CARTEIRA - IMPORTAÇÃO */
+
 
 
 });

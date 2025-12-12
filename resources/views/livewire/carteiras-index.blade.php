@@ -14,21 +14,29 @@
         <div class="container-fluid">
 
             <div class="row d-flex justify-content-between">
-                <div class="col-md-2">
+                <div class="col-md-4">
                     @can('clientes.create')
-                        <a href="{{ route('clientes.create') }}" class="btn btn-sm btn btn-success"><i
-                               class="material-icons">add</i> Adicionar</a>
+                        <a href="{{ route('clientes.create') }}" class="btn btn-sm btn-success">
+                            <i class="material-icons">add</i> Adicionar
+                        </a>
+                    @endcan
+
+                    @can('carteiras.create')
+                        <a href="{{ route('carteiras.import.form') }}" class="btn btn-sm btn-info">
+                            <i class="material-icons">cloud_upload</i> Importar Carteira
+                        </a>
                     @endcan
                 </div>
                 <div class="col-md-4">
                     <label class="w-100">
                         <span class="bmd-form-group">
-                            <input type="text" class="form-control"
-                                   placeholder="Procurar cliente" aria-controls="datatables" wire:model="search">                        
+                            <input type="text" class="form-control" placeholder="Procurar cliente"
+                                aria-controls="datatables" wire:model="search">
                         </span>
                     </label>
                 </div>
             </div>
+
 
             <div class="row">
                 <div class="col-md-12">
@@ -78,19 +86,20 @@
 
                                                     <!-- Button trigger modal -->
                                                     <button type="button" rel="tooltip" class="btn btn-success"
-                                                            data-toggle="modal" data-target="#id{{ $cliente->id }}">
+                                                        data-toggle="modal" data-target="#id{{ $cliente->id }}">
                                                         <i class="material-icons">remove_red_eye</i>
                                                     </button>
                                                     <!-- Modal -->
                                                     <div class="modal fade" id="id{{ $cliente->id }}" tabindex="-1"
-                                                         role="dialog" aria-labelledby="exampleModalLabel"
-                                                         aria-hidden="true">
+                                                        role="dialog" aria-labelledby="exampleModalLabel"
+                                                        aria-hidden="true">
                                                         <div class="modal-dialog" role="document">
                                                             <div class="modal-content">
                                                                 <div class="modal-header">
-                                                                    <h5 class="modal-title" id="exampleModalLabel"><strong>{{ $cliente->nome }}</strong></h5>
+                                                                    <h5 class="modal-title" id="exampleModalLabel">
+                                                                        <strong>{{ $cliente->nome }}</strong></h5>
                                                                     <button type="button" class="close"
-                                                                            data-dismiss="modal" aria-label="Close">
+                                                                        data-dismiss="modal" aria-label="Close">
                                                                         <span aria-hidden="true">&times;</span>
                                                                     </button>
                                                                 </div>
@@ -98,16 +107,21 @@
                                                                     <strong>Nome: </strong>{{ $cliente->nome }}<br>
                                                                     <strong>CPF: </strong>{{ $cliente->cpf }}<br>
                                                                     <strong>RG: </strong>{{ $cliente->rg }}<br>
-                                                                    <strong>Telefone: </strong>{{ $cliente->telefone_1 }}<br>
-                                                                    <strong>Telefone 2: </strong>{{ $cliente->telefone_2 }}<br>
-                                                                    <strong>Telefone 3: </strong>{{ $cliente->telefone_3 }}<br>
-                                                                    <strong>Data Nascimento: </strong>{{ $cliente->data_nascimento }}<br>
+                                                                    <strong>Telefone:
+                                                                    </strong>{{ $cliente->telefone_1 }}<br>
+                                                                    <strong>Telefone 2:
+                                                                    </strong>{{ $cliente->telefone_2 }}<br>
+                                                                    <strong>Telefone 3:
+                                                                    </strong>{{ $cliente->telefone_3 }}<br>
+                                                                    <strong>Data Nascimento:
+                                                                    </strong>{{ $cliente->data_nascimento }}<br>
                                                                     <strong>Orgão: </strong>{{ $cliente->orgao_1 }}<br>
-                                                                    <strong>Salário: </strong>{{ $cliente->salario_1 }}<br>
+                                                                    <strong>Salário:
+                                                                    </strong>{{ $cliente->salario_1 }}<br>
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-danger"
-                                                                            data-dismiss="modal">Fechar</button>
+                                                                        data-dismiss="modal">Fechar</button>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -129,9 +143,9 @@
 
                                                     @can('clientes.destroy')
                                                         <form class="d-inline"
-                                                              action="{{ route('clientes.destroy', $cliente->id) }}"
-                                                              method="POST"
-                                                              onsubmit="return confirm('Tem certeza que deseja excluir?')">
+                                                            action="{{ route('clientes.destroy', $cliente->id) }}"
+                                                            method="POST"
+                                                            onsubmit="return confirm('Tem certeza que deseja excluir?')">
                                                             @method('DELETE')
                                                             @csrf
                                                             <button type="submit" rel="tooltip" class="btn btn-danger">

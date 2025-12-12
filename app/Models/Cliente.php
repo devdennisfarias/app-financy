@@ -44,6 +44,12 @@ class Cliente extends Model
 		'alfabetizado',
 		'figura_publica',
 
+		'telefone_2',
+		'telefone_3',
+		'primeiro_contato',
+		'respondeu',
+		'descricao_carteira',
+
 		'user_id',           // usuário que cadastrou / responsável
 	];
 
@@ -55,6 +61,8 @@ class Cliente extends Model
 		'data_exp' => 'date',
 		'alfabetizado' => 'boolean',
 		'figura_publica' => 'boolean',
+		'primeiro_contato' => 'boolean',
+		'respondeu' => 'boolean',
 	];
 
 	/**
