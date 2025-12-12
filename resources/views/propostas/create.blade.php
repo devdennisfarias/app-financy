@@ -19,21 +19,21 @@
 
             <x-card>
 
-                <form method="POST" action="{{ route('propostas.store') }}">
+                <form id="form-proposta" method="POST" action="{{ route('propostas.store') }}">
                     @csrf
 
-                    {{-- LINHA 1: CPF, Nome Cliente (exibição), Produto --}}
+                    {{-- LINHA 1: CPF, Nome Cliente (visual), Produto --}}
                     <div class="row">
 
                         {{-- CPF DO CLIENTE --}}
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-3">
                                 <label for="cpf" class="ms-0">CPF do Cliente</label>
-                                <input type="text" name="cpf" id="cpf" class="form-control"
+                                <input type="text" name="cpf" id="cpf" class="form-control cpf-mask"
                                     value="{{ old('cpf') }}" required>
                             </div>
 
-                            {{-- BLOCO DE "CLIENTE NÃO ENCONTRADO" --}}
+                            {{-- CLIENTE NÃO ENCONTRADO --}}
                             <div id="cliente-nao-encontrado" class="mt-2 d-none">
                                 <span class="text-danger">Cliente não encontrado.</span>
 
@@ -42,7 +42,7 @@
                                 </a>
                             </div>
 
-                            {{-- BLOCO DE "CLIENTE ENCONTRADO" --}}
+                            {{-- CLIENTE ENCONTRADO --}}
                             <div id="cliente-encontrado" class="mt-2 d-none">
                                 <span class="text-success">
                                     Cliente encontrado:
@@ -51,7 +51,7 @@
                             </div>
                         </div>
 
-                        {{-- NOME DO CLIENTE (APENAS EXIBIÇÃO DIDÁTICA) --}}
+                        {{-- NOME DO CLIENTE (apenas exibição) --}}
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-3">
                                 <label class="ms-0">Nome do Cliente</label>
@@ -59,7 +59,7 @@
                             </div>
                         </div>
 
-                        {{-- PRODUTO (COM BANCO CONCATENADO) --}}
+                        {{-- PRODUTO (com nome do banco junto) --}}
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-3">
                                 <label for="produto_id" class="ms-0">Produto</label>
@@ -85,7 +85,7 @@
                     {{-- LINHA 2: Banco, Valor Bruto, Valor Líquido --}}
                     <div class="row">
 
-                        {{-- BANCO (SERÁ SELECIONADO AUTOMATICAMENTE PELO PRODUTO, SE POSSÍVEL) --}}
+                        {{-- BANCO --}}
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-3">
                                 <label for="banco_id" class="ms-0">Banco</label>
@@ -105,7 +105,7 @@
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-3">
                                 <label class="ms-0">Valor Bruto</label>
-                                <input type="text" name="valor_bruto" class="form-control"
+                                <input type="text" name="valor_bruto" id="valor_bruto" class="form-control money-mask"
                                     value="{{ old('valor_bruto') }}">
                             </div>
                         </div>
@@ -114,25 +114,25 @@
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-3">
                                 <label class="ms-0">Valor Líquido Liberado</label>
-                                <input type="text" name="valor_liquido_liberado" class="form-control"
-                                    value="{{ old('valor_liquido_liberado') }}">
+                                <input type="text" name="valor_liquido_liberado" id="valor_liquido_liberado"
+                                    class="form-control money-mask" value="{{ old('valor_liquido_liberado') }}">
                             </div>
                         </div>
                     </div>
 
-                    {{-- LINHA 3: Parcela, Qtd Parcelas, Taxa, Órgão --}}
+                    {{-- LINHA 3: Parcela, Qtd Parcelas, Taxa --}}
                     <div class="row">
                         {{-- Valor Parcela --}}
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="input-group input-group-static mb-3">
                                 <label class="ms-0">Valor da Parcela</label>
-                                <input type="text" name="valor_parcela" class="form-control"
-                                    value="{{ old('valor_parcela') }}">
+                                <input type="text" name="valor_parcela" id="valor_parcela"
+                                    class="form-control money-mask" value="{{ old('valor_parcela') }}">
                             </div>
                         </div>
 
                         {{-- Qtd Parcelas --}}
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="input-group input-group-static mb-3">
                                 <label class="ms-0">Qtd Parcelas</label>
                                 <input type="number" name="qtd_parcelas" class="form-control"
@@ -141,20 +141,45 @@
                         </div>
 
                         {{-- Taxa de Juros --}}
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="input-group input-group-static mb-3">
-                                <label class="ms-0">Taxa de Juros</label>
-                                <input type="text" name="tx_juros" class="form-control" value="{{ old('tx_juros') }}">
+                                <label class="ms-0">Taxa de Juros (%)</label>
+                                <input type="text" name="tx_juros" id="tx_juros" class="form-control percent-mask"
+                                    value="{{ old('tx_juros') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- LINHA 4: Convênio + Órgão --}}
+                    <div class="row">
+                        {{-- Convênio --}}
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-3">
+                                <label for="convenio_id" class="ms-0">Convênio</label>
+                                <select name="convenio_id" id="convenio_id" class="form-control">
+                                    <option value="">Selecione...</option>
+                                    @foreach ($convenios as $convenio)
+                                        <option value="{{ $convenio->id }}"
+                                            {{ (int) old('convenio_id') === (int) $convenio->id ? 'selected' : '' }}>
+                                            {{ $convenio->nome }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
 
-                        {{-- Órgão (livre – por enquanto) --}}
-                        <div class="col-md-3">
+                        {{-- Órgão Pagador (select) --}}
+                        <div class="col-md-4">
                             <div class="input-group input-group-static mb-3">
-                                <label class="ms-0">Órgão</label>
-                                <input type="text" name="orgao" class="form-control" value="{{ old('orgao') }}">
+                                <label for="orgao_id" class="ms-0">Órgão pagador</label>
+                                <select id="orgao_id" class="form-control">
+                                    <option value="">Selecione o convênio primeiro</option>
+                                </select>
                             </div>
                         </div>
+
+                        {{-- Campo oculto que realmente vai para a coluna "orgao" da proposta --}}
+                        <input type="hidden" name="orgao" id="orgao_hidden" value="{{ old('orgao') }}">
                     </div>
 
                     {{-- BOTÕES --}}
@@ -177,83 +202,201 @@
 @section('post-script')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+
+            // ---------- ELEMENTOS BÁSICOS ----------
             const cpfInput = document.getElementById('cpf');
-            const boxNaoEncontrado = document.getElementById('cliente-nao-encontrado');
-            const btnCadastrar = document.getElementById('btn-cadastrar-cliente');
-            const boxEncontrado = document.getElementById('cliente-encontrado');
-            const spanNomeCliente = document.getElementById('cliente-encontrado-nome');
-            const inputNomeCliente = document.getElementById('cliente_nome');
+            const clienteNaoEncontrado = document.getElementById('cliente-nao-encontrado');
+            const clienteEncontrado = document.getElementById('cliente-encontrado');
+            const clienteEncontradoNome = document.getElementById('cliente-encontrado-nome');
+            const clienteNomeInput = document.getElementById('cliente_nome');
+            const btnCadastrarCliente = document.getElementById('btn-cadastrar-cliente');
 
-            const produtoSelect = document.getElementById('produto_id');
-            const bancoSelect = document.getElementById('banco_id');
+            const convenioSelect = document.getElementById('convenio_id');
+            const orgaoSelect = document.getElementById('orgao_id');
+            const orgaoHidden = document.getElementById('orgao_hidden');
 
-            // 🔹 CPF: consulta cliente e exibe nome + opções
-            cpfInput.addEventListener('blur', function() {
-                let cpf = this.value.replace(/\D/g, '');
-                if (!cpf) {
-                    boxNaoEncontrado.classList.add('d-none');
-                    boxEncontrado.classList.add('d-none');
-                    inputNomeCliente.value = '';
+            const rotaConsultaCpf = @json(route('propostas.consulta-cpf'));
+            const urlCadastroClienteBase = @json(route('clientes.create'));
+
+            // ============================================================
+            // 1) BUSCA DO CLIENTE PELO CPF (preenche nome + convênio + órgão)
+            // ============================================================
+            function limparCliente() {
+                if (clienteNaoEncontrado) clienteNaoEncontrado.classList.add('d-none');
+                if (clienteEncontrado) clienteEncontrado.classList.add('d-none');
+                if (clienteEncontradoNome) clienteEncontradoNome.textContent = '';
+                if (clienteNomeInput) clienteNomeInput.value = '';
+            }
+
+            function limparConvenioOrgao() {
+                if (convenioSelect) convenioSelect.value = '';
+                if (orgaoSelect) orgaoSelect.innerHTML = '<option value="">Selecione o convênio primeiro</option>';
+                if (orgaoHidden) orgaoHidden.value = '';
+            }
+
+            if (cpfInput) {
+                cpfInput.addEventListener('blur', function() {
+                    const cpf = cpfInput.value.trim();
+                    if (!cpf) {
+                        limparCliente();
+                        limparConvenioOrgao();
+                        return;
+                    }
+
+                    fetch(rotaConsultaCpf + '?cpf=' + encodeURIComponent(cpf), {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(function(res) {
+                            if (!res.ok) {
+                                throw new Error('Erro na consulta de CPF');
+                            }
+                            return res.json();
+                        })
+                        .then(function(data) {
+                            if (!data.exists) {
+                                // CLIENTE NÃO ENCONTRADO
+                                limparCliente();
+                                limparConvenioOrgao();
+
+                                if (clienteNaoEncontrado) {
+                                    clienteNaoEncontrado.classList.remove('d-none');
+                                }
+
+                                if (btnCadastrarCliente) {
+                                    const redirectTo = window.location.href; // volta pro create depois
+                                    btnCadastrarCliente.href =
+                                        urlCadastroClienteBase +
+                                        '?redirect_to=' + encodeURIComponent(redirectTo) +
+                                        '&cpf=' + encodeURIComponent(cpf);
+                                }
+
+                                return;
+                            }
+
+                            // CLIENTE ENCONTRADO
+                            if (clienteNaoEncontrado) {
+                                clienteNaoEncontrado.classList.add('d-none');
+                            }
+                            if (clienteEncontrado) {
+                                clienteEncontrado.classList.remove('d-none');
+                            }
+                            if (clienteEncontradoNome) {
+                                clienteEncontradoNome.textContent = data.cliente.nome || '';
+                            }
+                            if (clienteNomeInput) {
+                                clienteNomeInput.value = data.cliente.nome || '';
+                            }
+
+                            // AUTO-PREENCHER CONVÊNIO + ÓRGÃO, SE EXISTIREM
+                            const convenioIdDoCliente = data.cliente.convenio_id || null;
+                            const orgaoIdDoCliente = data.cliente.orgao_id || null;
+
+                            if (convenioIdDoCliente && convenioSelect) {
+                                convenioSelect.value = String(convenioIdDoCliente);
+                                carregarOrgaosDoConvenio(convenioIdDoCliente, orgaoIdDoCliente);
+                            } else {
+                                limparConvenioOrgao();
+                            }
+                        })
+                        .catch(function(err) {
+                            console.error(err);
+                            limparCliente();
+                            // não limpamos convênio/órgão aqui pra não atrapalhar o operador se já estiver preenchendo
+                        });
+                });
+            }
+
+            // ============================================================
+            // 2) CONVÊNIO + ÓRGÃO (mesmo código que já estávamos usando)
+            // ============================================================
+            function carregarOrgaosDoConvenio(convenioId, orgaoSelecionadoId = null) {
+                if (!orgaoSelect || !orgaoHidden) return;
+
+                orgaoSelect.innerHTML = '<option value="">Carregando órgãos...</option>';
+                orgaoHidden.value = '';
+
+                if (!convenioId) {
+                    orgaoSelect.innerHTML = '<option value="">Selecione o convênio primeiro</option>';
                     return;
                 }
 
-                fetch("{{ route('propostas.consulta-cpf') }}?cpf=" + cpf)
-                    .then(res => res.json())
-                    .then(data => {
-                        // Garante compatibilidade:
-                        // - novo formato: { exists: true, cliente: {...} }
-                        // - antigo: objeto direto de cliente ou false
-                        let exists = false;
-                        let cliente = null;
-
-                        if (typeof data === 'object' && data !== null && 'exists' in data) {
-                            // Formato novo
-                            exists = !!data.exists;
-                            cliente = data.cliente;
-                        } else if (data && typeof data === 'object' && 'id' in data) {
-                            // Formato antigo (retornando o próprio cliente)
-                            exists = true;
-                            cliente = data;
+                fetch("{{ route('orgaos.by-convenio') }}?convenio_id=" + convenioId)
+                    .then(function(res) {
+                        if (!res.ok) {
+                            throw new Error('Erro ao buscar órgãos');
                         }
-
-                        if (!exists || !cliente) {
-                            // Não encontrou
-                            boxNaoEncontrado.classList.remove('d-none');
-                            boxEncontrado.classList.add('d-none');
-                            inputNomeCliente.value = '';
-
-                            let url = "{{ route('clientes.create') }}";
-                            url += "?from=propostas.create&cpf=" + cpf;
-
-                            btnCadastrar.href = url;
-                        } else {
-                            // Encontrou cliente
-                            boxNaoEncontrado.classList.add('d-none');
-                            boxEncontrado.classList.remove('d-none');
-
-                            const nome = cliente.nome || '';
-                            spanNomeCliente.textContent = nome;
-                            inputNomeCliente.value = nome;
-                        }
+                        return res.json();
                     })
-                    .catch(() => {
-                        // Em caso de erro na requisição, não quebra a tela toda
-                        boxNaoEncontrado.classList.add('d-none');
-                        boxEncontrado.classList.add('d-none');
-                        inputNomeCliente.value = '';
+                    .then(function(lista) {
+                        if (!Array.isArray(lista)) {
+                            console.error('Resposta inesperada de orgaos.by-convenio:', lista);
+                            lista = [];
+                        }
+
+                        orgaoSelect.innerHTML = '<option value="">Selecione...</option>';
+
+                        lista.forEach(function(orgao) {
+                            const opt = document.createElement('option');
+                            opt.value = orgao.id;
+                            opt.textContent = orgao.nome;
+                            orgaoSelect.appendChild(opt);
+                        });
+
+                        // Caso: veio órgão pré-selecionado (cliente)
+                        if (orgaoSelecionadoId) {
+                            orgaoSelect.value = String(orgaoSelecionadoId);
+                            const opt = orgaoSelect.options[orgaoSelect.selectedIndex];
+                            if (opt && opt.value) {
+                                orgaoHidden.value = opt.textContent;
+                                return;
+                            }
+                        }
+
+                        // Se não há órgão selecionado, mas tem lista, pode deixar sem nada ou pegar o primeiro.
+                        // Aqui vamos deixar sem nada pra forçar o operador a escolher.
+                    })
+                    .catch(function(err) {
+                        console.error(err);
+                        orgaoSelect.innerHTML = '<option value="">Erro ao carregar órgãos</option>';
+                        orgaoHidden.value = '';
                     });
-            });
+            }
 
-            // 🔹 Produto: ao mudar, ajustar automaticamente o banco se tiver vínculo
-            produtoSelect.addEventListener('change', function() {
-                const opt = this.options[this.selectedIndex];
-                const bancoId = opt.getAttribute('data-banco-id');
-                const bancoNome = opt.getAttribute('data-banco-nome');
+            // Quando mudar o convênio manualmente
+            if (convenioSelect) {
+                convenioSelect.addEventListener('change', function() {
+                    const convenioId = this.value || null;
+                    carregarOrgaosDoConvenio(convenioId, null);
+                });
+            }
 
-                if (bancoId) {
-                    bancoSelect.value = bancoId;
-                }
-            });
+            // Sempre que mudar o órgão no select, atualiza o hidden
+            if (orgaoSelect) {
+                orgaoSelect.addEventListener('change', function() {
+                    const opt = this.options[this.selectedIndex];
+                    if (opt && opt.value) {
+                        orgaoHidden.value = opt.textContent;
+                    } else {
+                        orgaoHidden.value = '';
+                    }
+                });
+            }
+
+            // --------- PRÉ-CARREGAMENTO (se algum dia usarmos convenios pré-setados aqui) ---------
+            @if (!empty($convenioSelecionadoId ?? null))
+                (function() {
+                    const convenioInicial = "{{ $convenioSelecionadoId }}";
+                    const orgaoInicial = "{{ $orgaoSelecionadoId ?? '' }}";
+
+                    if (convenioSelect) {
+                        convenioSelect.value = convenioInicial;
+                        carregarOrgaosDoConvenio(convenioInicial, orgaoInicial || null);
+                    }
+                })();
+            @endif
+
         });
     </script>
 @endsection

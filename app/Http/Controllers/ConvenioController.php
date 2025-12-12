@@ -114,4 +114,20 @@ class ConvenioController extends Controller
 			->route('convenios.index')
 			->withSuccess('Convênio excluído com sucesso.');
 	}
+	public function byConvenio(Request $request)
+	{
+		$convenioId = $request->get('convenio_id');
+
+		if (!$convenioId) {
+			return response()->json([]);
+		}
+
+		$orgaos = \App\Models\Orgao::where('convenio_id', $convenioId)
+			->orderBy('nome')
+			->get(['id', 'nome']);
+
+		return response()->json($orgaos);
+	}
+
+
 }

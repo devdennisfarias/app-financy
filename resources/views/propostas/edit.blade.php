@@ -54,9 +54,9 @@
                                 <div class="row">
                                     <div class="col-md-12">
 
-                                        {{-- CPF + CLIENTE + VENDEDOR --}}
+                                        {{-- CPF + CLIENTE + STATUS + VENDEDOR --}}
                                         <div class="row">
-                                            <div class="col-md-4">
+                                            <div class="col-md-2">
                                                 <div class="form-group">
                                                     <label class="bmd-label-floating">CPF Cliente</label>
                                                     <input type="text" class="form-control" readonly
@@ -73,28 +73,10 @@
                                             </div>
 
                                             <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Vendedor</label>
-                                                    <input type="text" class="form-control" readonly
-                                                        value="{{ optional($proposta->vendedor)->name ?? $user->name }}">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- ORGÃO + STATUS --}}
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Orgão</label>
-                                                    <input id="orgao" type="text" class="form-control" name="orgao"
-                                                        value="{{ old('orgao', $proposta->orgao) }}">
-                                                </div>
-                                            </div>
-
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="bmd-label-floating">Status da Proposta</label>
-                                                    <select name="status_atual_id" class="form-control">
+                                                <div class="input-group input-group-static">
+                                                    <label for="status_atual_id" class="ms-0">Status</label>
+                                                    <select name="status_atual_id" id="status_atual_id"
+                                                        class="form-control">
                                                         <option value="">Selecione...</option>
                                                         @foreach ($statusList as $status)
                                                             <option value="{{ $status->id }}"
@@ -105,9 +87,56 @@
                                                     </select>
                                                 </div>
                                             </div>
+
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label class="bmd-label-floating">Vendedor</label>
+                                                    <input type="text" class="form-control" readonly
+                                                        value="{{ optional($proposta->vendedor)->name ?? $user->name }}">
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        {{-- PRODUTO + BANCO + VALORES --}}
+                                        {{-- CONVÊNIO + ÓRGÃO --}}
+                                        <div class="row">
+                                            {{-- Convênio --}}
+                                            <div class="col-md-4">
+                                                <div class="input-group input-group-static mb-3">
+                                                    <label for="convenio_id" class="ms-0">Convênio</label>
+                                                    <select name="convenio_id" id="convenio_id" class="form-control">
+                                                        <option value="">Selecione...</option>
+                                                        @foreach ($convenios as $convenio)
+                                                            <option value="{{ $convenio->id }}"
+                                                                {{ (int) old('convenio_id', $convenioSelecionadoId) === (int) $convenio->id ? 'selected' : '' }}>
+                                                                {{ $convenio->nome }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            {{-- Órgão pagador --}}
+                                            <div class="col-md-4">
+                                                <div class="input-group input-group-static mb-3">
+                                                    <label for="orgao_id" class="ms-0">Órgão pagador</label>
+                                                    <select id="orgao_id" class="form-control">
+                                                        <option value="">Selecione...</option>
+                                                        @foreach ($orgaosDoConvenio as $orgao)
+                                                            <option value="{{ $orgao->id }}"
+                                                                {{ (int) old('orgao_id', $orgaoSelecionadoId) === (int) $orgao->id ? 'selected' : '' }}>
+                                                                {{ $orgao->nome }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            {{-- Campo oculto que vai para a coluna "orgao" da proposta --}}
+                                            <input type="hidden" name="orgao" id="orgao_hidden"
+                                                value="{{ old('orgao', $proposta->orgao) }}">
+                                        </div>
+
+                                        {{-- PRODUTO + BANCO --}}
                                         <div class="row">
                                             {{-- Produto --}}
                                             <div class="col-md-3">
@@ -148,7 +177,10 @@
                                                         value="{{ old('banco_id', $proposta->banco_id) }}">
                                                 </div>
                                             </div>
+                                        </div>
 
+                                        {{-- VALORES --}}
+                                        <div class="row">
                                             {{-- Valor Bruto --}}
                                             <div class="col-md-3">
                                                 <div class="form-group">
@@ -262,71 +294,90 @@
 @section('post-script')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            var produtoSelect = document.getElementById('produto_id');
-            var bancoLabel = document.getElementById('banco_label');
-            var bancoInput = document.getElementById('banco');
-            var bancoIdInput = document.getElementById('banco_id');
 
-            if (produtoSelect) {
-                produtoSelect.addEventListener('change', function() {
-                    var opt = produtoSelect.options[produtoSelect.selectedIndex];
-                    if (!opt) return;
+            const convenioSelect = document.getElementById('convenio_id');
+            const orgaoSelect = document.getElementById('orgao_id');
+            const orgaoHidden = document.getElementById('orgao_hidden');
 
-                    var instId = opt.getAttribute('data-instituicao-id');
-                    var instNome = opt.getAttribute('data-instituicao-nome');
+            function carregarOrgaosDoConvenio(convenioId, orgaoSelecionadoId = null) {
+                if (!orgaoSelect || !orgaoHidden) return;
 
-                    if (bancoLabel) bancoLabel.value = instNome || '';
-                    if (bancoInput) bancoInput.value = instNome || '';
-                    if (bancoIdInput) bancoIdInput.value = instId || '';
-                });
-            }
+                orgaoSelect.innerHTML = '<option value="">Carregando órgãos...</option>';
+                orgaoHidden.value = '';
 
-            // MÁSCARA CAMPOS MONETÁRIOS (edição)
-            function aplicarMascaraMoney(input) {
-                input.addEventListener('input', function() {
-                    let v = input.value;
-                    v = v.replace(/\D/g, '');
-
-                    if (!v) {
-                        input.value = '';
-                        return;
-                    }
-
-                    v = (parseInt(v, 10) / 100).toFixed(2);
-                    v = v.replace('.', ',');
-
-                    input.value = v;
-                });
-
-                // formata valor inicial
-                if (input.value) {
-                    let v = input.value.toString();
-                    v = v.replace(/\./g, '').replace(',', '');
-                    if (v) {
-                        v = (parseInt(v, 10) / 100).toFixed(2);
-                        v = v.replace('.', ',');
-                        input.value = v;
-                    }
+                if (!convenioId) {
+                    orgaoSelect.innerHTML = '<option value="">Selecione o convênio primeiro</option>';
+                    return;
                 }
+
+                fetch("{{ route('orgaos.by-convenio') }}?convenio_id=" + convenioId)
+                    .then(function(res) {
+                        if (!res.ok) {
+                            throw new Error('Erro ao buscar órgãos');
+                        }
+                        return res.json();
+                    })
+                    .then(function(lista) {
+                        if (!Array.isArray(lista)) {
+                            console.error('Resposta inesperada de orgaos.by-convenio:', lista);
+                            lista = [];
+                        }
+
+                        orgaoSelect.innerHTML = '<option value="">Selecione...</option>';
+
+                        lista.forEach(function(orgao) {
+                            const opt = document.createElement('option');
+                            opt.value = orgao.id;
+                            opt.textContent = orgao.nome;
+                            orgaoSelect.appendChild(opt);
+                        });
+
+                        if (orgaoSelecionadoId) {
+                            orgaoSelect.value = String(orgaoSelecionadoId);
+                            const opt = orgaoSelect.options[orgaoSelect.selectedIndex];
+                            if (opt && opt.value) {
+                                orgaoHidden.value = opt.textContent;
+                                return;
+                            }
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error(err);
+                        orgaoSelect.innerHTML = '<option value="">Erro ao carregar órgãos</option>';
+                        orgaoHidden.value = '';
+                    });
             }
 
-            document.querySelectorAll('.money').forEach(function(input) {
-                aplicarMascaraMoney(input);
-            });
-
-            const form = document.querySelector("form[name='editar_proposta']");
-            if (form) {
-                form.addEventListener('submit', function() {
-                    document.querySelectorAll('.money').forEach(function(input) {
-                        let v = input.value;
-                        if (!v) return;
-
-                        v = v.replace(/\./g, '').replace(',', '.');
-
-                        input.value = v;
-                    });
+            if (convenioSelect) {
+                convenioSelect.addEventListener('change', function() {
+                    const convenioId = this.value || null;
+                    carregarOrgaosDoConvenio(convenioId, null);
                 });
             }
+
+            if (orgaoSelect) {
+                orgaoSelect.addEventListener('change', function() {
+                    const opt = this.options[this.selectedIndex];
+                    if (opt && opt.value) {
+                        orgaoHidden.value = opt.textContent;
+                    } else {
+                        orgaoHidden.value = '';
+                    }
+                });
+            }
+
+            @if (!empty($convenioSelecionadoId ?? null))
+                (function() {
+                    const convenioInicial = "{{ $convenioSelecionadoId }}";
+                    const orgaoInicial = "{{ $orgaoSelecionadoId ?? '' }}";
+
+                    if (convenioSelect) {
+                        convenioSelect.value = convenioInicial;
+                        carregarOrgaosDoConvenio(convenioInicial, orgaoInicial || null);
+                    }
+                })();
+            @endif
+
         });
     </script>
 @endsection

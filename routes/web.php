@@ -160,6 +160,9 @@ Route::group(['middleware' => 'auth'], function () {
 	// convenios e orgaos
 	Route::resource('convenios', ConvenioController::class)->middleware('auth');
 	Route::resource('orgaos', OrgaoController::class)->middleware('auth');
+	// BUSCAR ÓRGÃOS POR CONVÊNIO (AJAX)
+	Route::get('orgaos/by-convenio', [OrgaoController::class, 'byConvenio'])
+		->name('orgaos.by-convenio');
 
 
 });

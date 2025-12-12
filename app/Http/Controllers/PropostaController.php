@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Banco;
+use App\Models\Convenio;
+use App\Models\Orgao;
 use App\Models\Proposta;
 use App\Models\Cliente;
 use App\Models\Documento;
@@ -12,8 +14,6 @@ use App\Models\Comissao;
 use App\Models\Status;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Requests\StorePropostaRequest;
-use App\Http\Requests\UpdatePropostaRequest;
 
 class PropostaController extends Controller
 {
@@ -27,15 +27,13 @@ class PropostaController extends Controller
 
 	public function index(Request $request)
 	{
-		// A listagem de "Todas as Propostas" é controlada pelo componente Livewire
-		// @livewire('propostas-index'), então aqui só retornamos a view.
 		return view('propostas.index', [
 			'activePage' => 'propostas',
 			'titlePage' => 'Lista de propostas',
 		]);
 	}
 
-	public function create(Request $request)
+	public function create()
 	{
 		$produtos = Produto::with('instituicao')
 			->orderBy('produto')
@@ -43,22 +41,17 @@ class PropostaController extends Controller
 
 		$instituicoes = Banco::orderBy('nome')->get();
 
-		$user = Auth::user();
+		$convenios = Convenio::orderBy('nome')->get();
 
-		// ✅ Se veio de um cadastro de cliente, já pré-carrega o cliente
-		$cliente = null;
-		if (session()->has('cliente_id')) {
-			$cliente = Cliente::find(session('cliente_id'));
-		}
+		$user = Auth::user();
 
 		return view('propostas.create', compact(
 			'produtos',
 			'instituicoes',
 			'user',
-			'cliente'
+			'convenios'
 		));
 	}
-
 
 	public function edit($id)
 	{
@@ -74,21 +67,40 @@ class PropostaController extends Controller
 			->get();
 
 		$user = Auth::user();
-
-		// LISTA DE STATUS PARA O SELECT
 		$statusList = Status::orderBy('status')->get();
+		$convenios = Convenio::orderBy('nome')->get();
+
+		$convenioSelecionadoId = null;
+		$orgaoSelecionadoId = null;
+		$orgaosDoConvenio = collect();
+
+		if (!empty($proposta->orgao)) {
+			$orgaoModel = Orgao::where('nome', $proposta->orgao)->first();
+
+			if ($orgaoModel) {
+				$orgaoSelecionadoId = $orgaoModel->id;
+				$convenioSelecionadoId = $orgaoModel->convenio_id;
+
+				$orgaosDoConvenio = Orgao::where('convenio_id', $convenioSelecionadoId)
+					->orderBy('nome')
+					->get();
+			}
+		}
 
 		return view('propostas.edit', compact(
 			'proposta',
 			'produtos',
 			'user',
-			'statusList'
+			'statusList',
+			'convenios',
+			'convenioSelecionadoId',
+			'orgaoSelecionadoId',
+			'orgaosDoConvenio'
 		));
 	}
 
 	public function store(Request $request)
 	{
-		// Normaliza campos numéricos (R$ 1.234,56 -> 1234.56 / 0,0 % -> 0.0)
 		$this->normalizarCamposNumericos($request);
 
 		$dados = $request->validate([
@@ -102,11 +114,9 @@ class PropostaController extends Controller
 			'tx_juros' => 'nullable|numeric',
 			'valor_parcela' => 'nullable|numeric',
 			'qtd_parcelas' => 'nullable|integer',
-			// se no futuro tiver select de status no cadastro, a gente aceita
 			'status_atual_id' => 'nullable|exists:status,id',
 		]);
 
-		// CLIENTE pelo CPF
 		$cliente = Cliente::where('cpf', $dados['cpf'])->first();
 
 		if (!$cliente) {
@@ -115,28 +125,20 @@ class PropostaController extends Controller
 				->withErrors(['cpf' => 'Cliente não encontrado. Cadastre o cliente antes de criar a proposta.']);
 		}
 
-		// Se banco_id não vier, tenta puxar do produto (instituicao)
 		if (empty($dados['banco_id']) && !empty($dados['produto_id'])) {
 			$produto = Produto::with('instituicao')->find($dados['produto_id']);
 
 			if ($produto && $produto->instituicao) {
 				$dados['banco_id'] = $produto->instituicao->id;
-				// se não veio o nome do banco, usa o da instituição
 				if (empty($dados['banco'])) {
 					$dados['banco'] = $produto->instituicao->nome;
 				}
 			}
 		}
 
-		// Preenche infos adicionais
 		$dados['cliente_id'] = $cliente->id;
 		$dados['user_id'] = Auth::id();
 
-		/**
-		 * STATUS INICIAL:
-		 * - se vier um status_atual_id do formulário, usa ele
-		 * - senão, define como "Cadastrada"
-		 */
 		if (empty($dados['status_atual_id'])) {
 			$defaultStatus = Status::whereRaw('LOWER(status) = ?', ['cadastrada'])->first();
 
@@ -145,12 +147,10 @@ class PropostaController extends Controller
 			}
 		}
 
-		// CPF não é coluna de propostas (é de cliente), então removo do array
 		unset($dados['cpf']);
 
 		$proposta = Proposta::create($dados);
 
-		// Depois de cadastrar, faz sentido ir pra edição completa
 		return redirect()
 			->route('propostas.edit', $proposta->id)
 			->with('success', 'Proposta criada com sucesso.');
@@ -165,7 +165,6 @@ class PropostaController extends Controller
 	{
 		$proposta = Proposta::findOrFail($id);
 
-		// Normaliza campos numéricos antes de validar
 		$this->normalizarCamposNumericos($request);
 
 		$dados = $request->validate([
@@ -181,7 +180,6 @@ class PropostaController extends Controller
 			'status_atual_id' => 'nullable|exists:status,id',
 		]);
 
-		// Se banco_id não vier, tenta puxar do produto
 		if (empty($dados['banco_id']) && !empty($dados['produto_id'])) {
 			$produto = Produto::with('instituicao')->find($dados['produto_id']);
 
@@ -195,8 +193,6 @@ class PropostaController extends Controller
 
 		$proposta->update($dados);
 
-		// --- REDIRECIONAMENTO FLEXÍVEL ---
-		// se veio "from=esteira" na request, volta para a esteira
 		$from = $request->input('from') ?? $request->input('redirect_to');
 
 		if ($from === 'esteira') {
@@ -205,7 +201,6 @@ class PropostaController extends Controller
 				->with('success', 'Proposta atualizada com sucesso.');
 		}
 
-		// fluxo padrão: permanece na tela de edição da proposta
 		return redirect()
 			->route('propostas.edit', $proposta->id)
 			->with('success', 'Proposta atualizada com sucesso.');
@@ -221,26 +216,27 @@ class PropostaController extends Controller
 
 	public function consultaCpf(Request $request)
 	{
-		// Normaliza CPF (só números)
-		$cpf = preg_replace('/\D/', '', $request->input('cpf'));
+		$cpf = preg_replace('/\D/', '', $request->cpf);
 
-		// Compara removendo máscara também no banco
-		$cliente = Cliente::whereRaw(
-			'REPLACE(REPLACE(REPLACE(cpf, ".", ""), "-", ""), " ", "") = ?',
-			[$cpf]
-		)->first();
+		$cliente = Cliente::with('orgao.convenio')
+			->whereRaw('REPLACE(REPLACE(REPLACE(cpf, ".", ""), "-", ""), " ", "") = ?', [$cpf])
+			->first();
 
-		// Sempre devolve um JSON padronizado
+		if (!$cliente) {
+			return response()->json(['exists' => false]);
+		}
+
 		return response()->json([
-			'exists' => (bool) $cliente,
-			'cliente' => $cliente ? [
+			'exists' => true,
+			'cliente' => [
 				'id' => $cliente->id,
 				'nome' => $cliente->nome,
 				'cpf' => $cliente->cpf,
-			] : null,
+				'orgao_id' => $cliente->orgao_id,
+				'convenio_id' => optional($cliente->orgao)->convenio_id,
+			],
 		]);
 	}
-
 
 	public function deletarDoc($id)
 	{
@@ -273,7 +269,6 @@ class PropostaController extends Controller
 			->latest()
 			->paginate(20);
 
-		// --- KPIs ---
 		$baseQuery = clone $query;
 
 		$resumo = [
@@ -301,7 +296,6 @@ class PropostaController extends Controller
 
 		$hoje = now()->toDateString();
 
-		// 1) Tentar comissão específica da promotora + produto
 		if ($promotoraId) {
 			$comissaoPromo = Comissao::where('produto_id', $produto->id)
 				->where('promotora_id', $promotoraId)
@@ -321,7 +315,6 @@ class PropostaController extends Controller
 			}
 		}
 
-		// 2) Tentar comissão por banco + produto
 		if ($produto->banco_id) {
 			$comissaoBanco = Comissao::where('produto_id', $produto->id)
 				->where('banco_id', $produto->banco_id)
@@ -341,14 +334,9 @@ class PropostaController extends Controller
 			}
 		}
 
-		// 3) Não encontrou configuração -> retorna null
 		return null;
 	}
 
-	/**
-	 * Normaliza campos numéricos vindos no formato brasileiro
-	 * (R$ 1.234,56, 0,0 %, etc) para formato decimal (1234.56).
-	 */
 	protected function normalizarCamposNumericos(Request $request): void
 	{
 		$campos = [
@@ -371,9 +359,6 @@ class PropostaController extends Controller
 		}
 	}
 
-	/**
-	 * Converte string em formato BR para decimal em string (para gravar no BD).
-	 */
 	protected function brToDecimal(?string $valor): ?string
 	{
 		if ($valor === null) {
@@ -385,13 +370,8 @@ class PropostaController extends Controller
 			return null;
 		}
 
-		// Remove R$, %, espaços
 		$valor = str_replace(['R$', '%', ' '], '', $valor);
-
-		// Remove ponto de milhar
 		$valor = str_replace('.', '', $valor);
-
-		// Troca vírgula por ponto
 		$valor = str_replace(',', '.', $valor);
 
 		return $valor;

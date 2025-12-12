@@ -122,4 +122,32 @@ class OrgaoController extends Controller
 			->route('orgaos.index')
 			->withSuccess('Órgão pagador excluído com sucesso.');
 	}
+
+	public function byConvenio(Request $request)
+	{
+		$convenioId = $request->get('convenio_id');
+
+		if (!$convenioId) {
+			// sem convênio, devolve lista vazia
+			return response()->json([]);
+		}
+
+		try {
+			$orgaos = \App\Models\Orgao::where('convenio_id', $convenioId)
+				->orderBy('nome')
+				->get(['id', 'nome']);
+
+			return response()->json($orgaos);
+		} catch (\Throwable $e) {
+			// se der qualquer erro no backend, devolve lista vazia pra não estourar no JS
+			\Log::error('Erro ao carregar orgaos por convenio', [
+				'convenio_id' => $convenioId,
+				'exception' => $e->getMessage(),
+			]);
+
+			return response()->json([], 500);
+		}
+	}
+
+
 }
